@@ -36,7 +36,12 @@ export default function LandingPage() {
             <ThemeSelector />
             <ThemeToggle />
 
-            <SignIn text="Sign in with GitHub" />
+            <SignIn
+              text="Sign in with GitHub"
+              size={`sm`}
+              iconAfter={<></>}
+              className="text-sm"
+            />
           </div>
         </div>
       </header>
@@ -67,6 +72,7 @@ export default function LandingPage() {
               className="text-lg px-8 py-6"
               iconAfter={<ArrowRight className="h-5 w-5" />}
             />
+
             <Button
               size="lg"
               variant="outline"
@@ -149,6 +155,7 @@ export default function LandingPage() {
               Join thousands of developers who have discovered their perfect
               open-source projects with ContributorConnect AI.
             </p>
+
             <SignIn
               text="Start Contributing Today"
               size="lg"

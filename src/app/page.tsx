@@ -1,18 +1,14 @@
 import LandingPage from "@/components/client/LandingPage"
-// import SignIn from "@/components/signin-github"
 import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 
 export default async function Home() {
   const session = await auth()
-  return (
-    <>
-      <div>
-        {/* <h1>Home</h1> */}
-        {/* <pre>{JSON.stringify(session, null, 2)}</pre> */}
 
-        <LandingPage />
-      </div>
-      {/* <SignIn /> */}
-    </>
-  )
+  // If user is authenticated, redirect to chat
+  if (session) {
+    redirect("/chat")
+  }
+
+  return <LandingPage />
 }
