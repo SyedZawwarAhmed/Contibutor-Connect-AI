@@ -20,6 +20,35 @@ model User {
   email         String          @unique
   emailVerified DateTime?
   image         String?
+
+  // Core GitHub fields
+  githubUsername String?
+  githubId       Int?     @unique
+  githubNodeId   String?
+  githubUrl      String?
+  
+  // Profile fields
+  company        String?
+  blog           String?
+  location       String?
+  bio            String?
+  twitterUsername String?
+  hireable       Boolean?
+  siteAdmin      Boolean?
+  
+  // Statistics
+  publicRepos    Int?
+  publicGists    Int?
+  followers      Int?
+  following      Int?
+  
+  // Timestamps from GitHub
+  githubCreatedAt String?
+  githubUpdatedAt String?
+
+   // Plan information (JSON field for GitHub Pro/Enterprise info)
+  plan           Json?
+  
   accounts      Account[]
   sessions      Session[]
   // Optional for WebAuthn support

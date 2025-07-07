@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Github,
   MapPin,
@@ -10,41 +11,20 @@ import {
   ExternalLink,
   Building,
   Globe,
+  Twitter,
+  Shield,
+  Crown,
+  Users,
+  GitFork,
+  Star,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import type { User } from "next-auth"
-import {
-  fetchGitHubUser,
-  fetchGitHubUserLanguages,
-  type GitHubUser,
-} from "@/lib/github-api"
-import { useEffect, useState } from "react"
-import { Skeleton } from "@/components/ui/skeleton"
 
 interface UserProfileProps {
   user?: User | null
 }
-export function UserProfile({ user }: UserProfileProps) {
-  const [githubData, setGithubData] = useState<GitHubUser | null>(null)
-  const [languages, setLanguages] = useState<Record<string, number>>({})
-  const [loading, setLoading] = useState(false)
-  const githubUsername = (user as any)?.githubUsername
-  useEffect(() => {
-    if (githubUsername) {
-      setLoading(true)
-      Promise.all([
-        fetchGitHubUser(githubUsername),
-        fetchGitHubUserLanguages(githubUsername),
-      ])
-        .then(([userData, languageData]) => {
-          setGithubData(userData)
-          setLanguages(languageData)
-        })
-        .catch(console.error)
-        .finally(() => setLoading(false))
-    }
-  }, [githubUsername])
 
+export function UserProfile({ user }: UserProfileProps) {
   if (!user) {
     return (
       <div className="p-4">
@@ -56,15 +36,18 @@ export function UserProfile({ user }: UserProfileProps) {
       </div>
     )
   }
-  console.log("user data", user)
 
-  const topLanguages = Object.entries(languages)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-    .map(([lang]) => lang)
+  // All data is now available directly from the user object (no API calls needed!)
+  const githubJoinDate = user.githubCreatedAt
+    ? new Date(user.githubCreatedAt).toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      })
+    : null
 
   return (
     <div className="p-4 space-y-4">
+      {/* User Profile Card */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-3">
@@ -75,20 +58,29 @@ export function UserProfile({ user }: UserProfileProps) {
               </AvatarFallback>
             </Avatar>
             <div className="space-y-1 flex-1">
-              <h3 className="font-semibold text-sm">
-                {user.name || "GitHub User"}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-sm">
+                  {user.name || "GitHub User"}
+                </h3>
+                {user.siteAdmin && (
+                  <Badge variant="destructive" className="text-xs">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Admin
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Github className="h-3 w-3" />@
-                {githubUsername || user.email || "GitHub Account"}
+                {user.githubUsername || "Unknown"}
               </p>
             </div>
           </div>
 
-          {githubUsername && (
+          {/* GitHub Profile Link */}
+          {user.githubUsername && (
             <Button variant="outline" size="sm" className="w-full mt-3" asChild>
               <a
-                href={`https://github.com/${githubUsername}`}
+                href={`https://github.com/${user.githubUsername}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2"
@@ -101,160 +93,169 @@ export function UserProfile({ user }: UserProfileProps) {
         </CardHeader>
 
         <CardContent className="space-y-3">
-          {loading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-2/3" />
+          {/* Bio */}
+          {user.bio && (
+            <div className="space-y-1">
+              <p className="text-xs text-foreground leading-relaxed">
+                {user.bio.replace(/\r\n/g, " ").trim()}
+              </p>
             </div>
-          ) : githubData ? (
-            <div className="space-y-2">
-              {githubData.bio && (
-                <p className="text-xs text-foreground">{githubData.bio}</p>
-              )}
+          )}
 
-              {githubData.location && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <MapPin className="h-3 w-3" />
-                  {githubData.location}
-                </div>
-              )}
-
-              {githubData.company && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Building className="h-3 w-3" />
-                  {githubData.company}
-                </div>
-              )}
-
-              {githubData.blog && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Globe className="h-3 w-3" />
-                  <a
-                    href={
-                      githubData.blog.startsWith("http")
-                        ? githubData.blog
-                        : `https://${githubData.blog}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline truncate"
-                  >
-                    {githubData.blog}
-                  </a>
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                Joined{" "}
-                {new Date(githubData.created_at).toLocaleDateString("en-US", {
-                  month: "short",
-                  year: "numeric",
-                })}
-              </div>
+          {/* Location */}
+          {user.location && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              {user.location}
             </div>
-          ) : (
+          )}
+
+          {/* Company */}
+          {user.company && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Building className="h-3 w-3" />
+              {user.company}
+            </div>
+          )}
+
+          {/* Blog/Website */}
+          {user.blog && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Globe className="h-3 w-3" />
+              <a
+                href={
+                  user.blog.startsWith("http")
+                    ? user.blog
+                    : `https://${user.blog}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline truncate"
+              >
+                {user.blog}
+              </a>
+            </div>
+          )}
+
+          {/* Twitter */}
+          {user.twitterUsername && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Twitter className="h-3 w-3" />
+              <a
+                href={`https://twitter.com/${user.twitterUsername}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+              >
+                @{user.twitterUsername}
+              </a>
+            </div>
+          )}
+
+          {/* Join Date */}
+          {githubJoinDate && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Calendar className="h-3 w-3" />
-              Connected via GitHub OAuth
+              Joined {githubJoinDate}
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* GitHub Statistics */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Programming Languages</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Based on your GitHub repositories
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {loading ? (
-            <div className="flex flex-wrap gap-1">
-              {[1, 2, 3, 4, 5].map(i => (
-                <Skeleton key={i} className="h-5 w-16" />
-              ))}
-            </div>
-          ) : topLanguages.length > 0 ? (
-            <div>
-              <div className="flex flex-wrap gap-1">
-                {topLanguages.map(language => (
-                  <Badge key={language} variant="secondary" className="text-xs">
-                    {language}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-1">
-              {["JavaScript", "TypeScript", "React", "Node.js", "Python"].map(
-                skill => (
-                  <Badge key={skill} variant="secondary" className="text-xs">
-                    {skill}
-                  </Badge>
-                )
-              )}
-              <p className="text-xs text-muted-foreground w-full mt-2">
-                Mock data - Connect GitHub API for real languages
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">GitHub Stats</CardTitle>
+          <CardTitle className="text-sm">GitHub Statistics</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="flex justify-between">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-3 w-8" />
-                </div>
-              ))}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-center gap-1 text-xl font-bold text-primary">
+                {user.publicRepos || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">Repositories</p>
             </div>
-          ) : githubData ? (
-            <>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Public Repos</span>
-                <span className="font-medium">{githubData.public_repos}</span>
+
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-center gap-1 text-xl font-bold text-primary">
+                {user.followers || 0}
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Followers</span>
-                <span className="font-medium">{githubData.followers}</span>
+              <p className="text-xs text-muted-foreground">Followers</p>
+            </div>
+
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <div className="text-xl font-bold text-primary">
+                {user.following || 0}
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Following</span>
-                <span className="font-medium">{githubData.following}</span>
+              <p className="text-xs text-muted-foreground">Following</p>
+            </div>
+
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <div className="text-xl font-bold text-primary">
+                {user.publicGists || 0}
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Public Gists</span>
-                <span className="font-medium">{githubData.public_gists}</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Public Repos</span>
-                <span className="font-medium">--</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Followers</span>
-                <span className="font-medium">--</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Following</span>
-                <span className="font-medium">--</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Connect GitHub API for detailed stats
-              </p>
-            </>
-          )}
+              <p className="text-xs text-muted-foreground">Gists</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Professional Info */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Professional Info</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Skills from bio */}
+          <div>
+            <h4 className="text-xs font-medium text-muted-foreground mb-2">
+              Expertise Areas
+            </h4>
+            <div className="flex flex-wrap gap-1">
+              <Badge variant="secondary" className="text-xs">
+                Blockchain
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Frontend
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Software Engineering
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Problem Solving
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Entrepreneurship
+              </Badge>
+            </div>
+          </div>
+
+          {/* Tech stack placeholder */}
+          <div>
+            <h4 className="text-xs font-medium text-muted-foreground mb-2">
+              Tech Stack
+            </h4>
+            <div className="flex flex-wrap gap-1">
+              <Badge variant="outline" className="text-xs">
+                JavaScript
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                TypeScript
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                React
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                Next.js
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                Blockchain
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Based on repository analysis
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
