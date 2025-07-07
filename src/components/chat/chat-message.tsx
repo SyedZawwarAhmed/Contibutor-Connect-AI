@@ -234,9 +234,9 @@ export function ChatMessage({
             <LoadingDots />
           ) : (
             <div className="space-y-2">
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              <div className="text-sm leading-relaxed whitespace-pre-wrap">
                 <MessageContent content={message.content} />
-              </p>
+              </div>
 
               {/* Show structured reasoning if available */}
               {structuredData?.reasoning && !isUser && (
