@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useChat } from "ai/react"
+import { useState, useCallback } from "react"
+import { useChat } from "@ai-sdk/react"
 import { ChatInterface } from "@/components/chat/chat-interface"
 import { WelcomeScreenWithInput } from "@/components/chat/welcome-screen-with-input"
 import { Header } from "@/components/layout/header"
@@ -13,26 +13,46 @@ interface ChatPageClientProps {
 }
 
 export default function ChatPageClient({ session }: ChatPageClientProps) {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } =
-    useChat()
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    error,
+    setMessages,
+  } = useChat({
+    api: "/api/chat",
+    onError: error => {
+      console.error("Chat error:", error)
+    },
+    onFinish: message => {
+      console.log("Message finished:", message)
+    },
+  })
 
   const hasMessages = messages.length > 0
 
-  const onStarterQuestion = (question: string) => {
-    // Create a proper event object for handleInputChange
-    const fakeEvent = {
-      target: { value: question },
-    } as React.ChangeEvent<HTMLTextAreaElement>
+  const onStarterQuestion = useCallback(
+    (question: string) => {
+      // Create a proper event object for handleInputChange
+      const fakeEvent = {
+        target: { value: question },
+      } as React.ChangeEvent<HTMLTextAreaElement>
 
-    handleInputChange(fakeEvent)
+      handleInputChange(fakeEvent)
 
-    // Create a proper event object for handleSubmit
-    const fakeSubmitEvent = {
-      preventDefault: () => {},
-    } as React.FormEvent<HTMLFormElement>
+      // Use setTimeout to ensure the input is set before submitting
+      setTimeout(() => {
+        const fakeSubmitEvent = {
+          preventDefault: () => {},
+        } as React.FormEvent<HTMLFormElement>
 
-    handleSubmit(fakeSubmitEvent)
-  }
+        handleSubmit(fakeSubmitEvent)
+      }, 0)
+    },
+    [handleInputChange, handleSubmit]
+  )
 
   return (
     <div className="flex h-screen bg-background">
@@ -45,7 +65,6 @@ export default function ChatPageClient({ session }: ChatPageClientProps) {
           <div className="hidden lg:block w-80 border-r border-border bg-card">
             <UserProfile user={session.user} />
           </div>
-
           {/* Chat Area */}
           <div className="flex-1 flex flex-col">
             {hasMessages ? (
@@ -55,6 +74,7 @@ export default function ChatPageClient({ session }: ChatPageClientProps) {
                 handleInputChange={handleInputChange}
                 handleSubmit={handleSubmit}
                 isLoading={isLoading}
+                error={error}
               />
             ) : (
               <WelcomeScreenWithInput
