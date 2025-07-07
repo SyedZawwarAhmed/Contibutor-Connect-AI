@@ -54,6 +54,12 @@ export default function ChatPageClient({ session }: ChatPageClientProps) {
     [handleInputChange, handleSubmit]
   )
 
+  const handleProjectRequest = useCallback((query: string) => {
+    console.log("Project request:", query)
+    // This will be handled by the ChatMessage component internally
+    // You can add additional logic here if needed
+  }, [])
+
   return (
     <div className="flex h-screen bg-background">
       {/* Main Content */}
@@ -75,6 +81,7 @@ export default function ChatPageClient({ session }: ChatPageClientProps) {
                 handleSubmit={handleSubmit}
                 isLoading={isLoading}
                 error={error}
+                onProjectRequest={handleProjectRequest}
               />
             ) : (
               <WelcomeScreenWithInput

@@ -16,6 +16,7 @@ interface ChatInterfaceProps {
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
   isLoading: boolean
   error?: Error | null
+  onProjectRequest: (query: string) => void
 }
 
 export function ChatInterface({
@@ -25,6 +26,7 @@ export function ChatInterface({
   handleSubmit,
   isLoading,
   error,
+  onProjectRequest,
 }: ChatInterfaceProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
@@ -48,19 +50,12 @@ export function ChatInterface({
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-4 max-w-4xl mx-auto">
           {messages.map(message => (
-            <ChatMessage key={message.id} message={message} />
-          ))}
-          {isLoading && (
             <ChatMessage
-              message={{
-                id: "loading",
-                role: "assistant",
-                content: "",
-                parts: [],
-              }}
-              isLoading={true}
+              key={message.id}
+              message={message}
+              onProjectRequest={onProjectRequest}
             />
-          )}
+          ))}
         </div>
       </ScrollArea>
 
