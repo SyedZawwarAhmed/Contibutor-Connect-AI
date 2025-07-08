@@ -29,7 +29,7 @@ export class LLMService {
     if (!process.env.ANTHROPIC_API_KEY) {
       throw new Error("ANTHROPIC_API_KEY is not configured")
     }
-    return anthropic("claude-3-5-sonnet-20241022")
+    return anthropic("claude-4-sonnet-20250514")
   }
 
   async generateProjectRecommendations(
