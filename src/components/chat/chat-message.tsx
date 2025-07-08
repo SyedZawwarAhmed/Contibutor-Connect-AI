@@ -8,7 +8,9 @@ import { Bot, User, Sparkles, Database, Zap } from "lucide-react"
 import { LoadingDots } from "@/components/ui/loading-dots"
 import type { Message } from "ai"
 import { useEffect, useState, useRef } from "react"
-
+import ReactMarkdown from "react-markdown"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism"
 interface ChatMessageProps {
   message: Message
   isLoading?: boolean
@@ -47,94 +49,140 @@ interface MCPMetadata {
   user_analysis_used?: boolean
 }
 
-function MessageContent({ content }: { content: string }) {
-  const formatContent = (text: string) => {
-    const lines = text.split("\n")
-    const elements: any[] = []
+const MarkdownComponents = {
+  // Headings
+  h1: ({ children }: any) => (
+    <h1 className="text-xl font-bold text-foreground mb-3 mt-4 first:mt-0">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }: any) => (
+    <h2 className="text-lg font-semibold text-foreground mb-2 mt-3 first:mt-0 flex items-center gap-2">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }: any) => (
+    <h3 className="text-base font-semibold text-foreground mb-2 mt-3 first:mt-0">
+      {children}
+    </h3>
+  ),
+  h4: ({ children }: any) => (
+    <h4 className="text-sm font-semibold text-foreground mb-1 mt-2 first:mt-0">
+      {children}
+    </h4>
+  ),
 
-    lines.forEach((line, index) => {
-      const trimmedLine = line.trim()
+  // Paragraphs
+  p: ({ children }: any) => (
+    <p className="text-sm text-foreground leading-relaxed mb-3 last:mb-0">
+      {children}
+    </p>
+  ),
 
-      if (!trimmedLine) {
-        elements.push(<div key={`space-${index}`} className="h-2" />)
-        return
-      }
+  // Lists
+  ul: ({ children }: any) => (
+    <ul className="space-y-1 mb-3 ml-4">{children}</ul>
+  ),
+  ol: ({ children }: any) => (
+    <ol className="space-y-1 mb-3 ml-4 list-decimal">{children}</ol>
+  ),
+  li: ({ children }: any) => (
+    <li className="text-sm text-foreground leading-relaxed flex items-start gap-2">
+      <span className="text-primary mt-1.5 w-1 h-1 rounded-full bg-current flex-shrink-0" />
+      <span>{children}</span>
+    </li>
+  ),
 
-      // Check for numbered lists (1. 2. 3.)
-      if (/^\d+\.\s/.test(trimmedLine)) {
-        elements.push(
-          <div key={index} className="flex gap-2 mb-2">
-            <span className="text-primary font-semibold text-sm min-w-[20px]">
-              {trimmedLine.match(/^\d+/)?.[0]}.
-            </span>
-            <span className="text-foreground text-sm leading-relaxed">
-              {trimmedLine.replace(/^\d+\.\s/, "")}
-            </span>
-          </div>
-        )
-        return
-      }
+  // Emphasis
+  strong: ({ children }: any) => (
+    <strong className="font-semibold text-primary">{children}</strong>
+  ),
+  em: ({ children }: any) => (
+    <em className="italic text-muted-foreground">{children}</em>
+  ),
 
-      // Check for bullet points (-)
-      if (trimmedLine.startsWith("- ")) {
-        elements.push(
-          <div key={index} className="flex gap-2 mb-1 ml-2">
-            <span className="text-primary mt-1.5 w-1 h-1 rounded-full bg-current flex-shrink-0" />
-            <span className="text-foreground text-sm leading-relaxed">
-              {trimmedLine.replace(/^- /, "")}
-            </span>
-          </div>
-        )
-        return
-      }
+  // Code
+  code: ({ inline, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || "")
+    const language = match ? match[1] : ""
 
-      // Check for headings (text ending with :)
-      if (trimmedLine.endsWith(":") && trimmedLine.length < 50) {
-        elements.push(
-          <h4
-            key={index}
-            className="font-semibold text-foreground text-sm mt-3 mb-1"
+    if (!inline && language) {
+      return (
+        <div className="my-3">
+          <SyntaxHighlighter
+            style={oneDark}
+            language={language}
+            PreTag="div"
+            className="rounded-md text-xs"
+            {...props}
           >
-            {trimmedLine}
-          </h4>
-        )
-        return
-      }
-
-      // Check for bold project names (**text**)
-      if (trimmedLine.includes("**")) {
-        const parts = trimmedLine.split("**")
-        elements.push(
-          <p
-            key={index}
-            className="text-foreground text-sm leading-relaxed mb-2"
-          >
-            {parts.map((part, i) =>
-              i % 2 === 1 ? (
-                <strong key={i} className="font-semibold text-primary">
-                  {part}
-                </strong>
-              ) : (
-                part
-              )
-            )}
-          </p>
-        )
-        return
-      }
-
-      // Regular paragraph
-      elements.push(
-        <p key={index} className="text-foreground text-sm leading-relaxed mb-2">
-          {trimmedLine}
-        </p>
+            {String(children).replace(/\n$/, "")}
+          </SyntaxHighlighter>
+        </div>
       )
-    })
+    }
 
-    return elements
-  }
+    return (
+      <code
+        className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-foreground border"
+        {...props}
+      >
+        {children}
+      </code>
+    )
+  },
 
-  return <div className="space-y-1">{formatContent(content)}</div>
+  // Links
+  a: ({ href, children }: any) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
+    >
+      {children}
+    </a>
+  ),
+
+  // Blockquotes
+  blockquote: ({ children }: any) => (
+    <blockquote className="border-l-4 border-primary pl-4 py-2 bg-muted/30 rounded-r-md mb-3 italic text-muted-foreground">
+      {children}
+    </blockquote>
+  ),
+
+  // Tables
+  table: ({ children }: any) => (
+    <div className="overflow-x-auto mb-3">
+      <table className="min-w-full border border-border rounded-md">
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children }: any) => <thead className="bg-muted">{children}</thead>,
+  tbody: ({ children }: any) => <tbody>{children}</tbody>,
+  tr: ({ children }: any) => (
+    <tr className="border-b border-border">{children}</tr>
+  ),
+  th: ({ children }: any) => (
+    <th className="px-3 py-2 text-left text-xs font-semibold text-foreground">
+      {children}
+    </th>
+  ),
+  td: ({ children }: any) => (
+    <td className="px-3 py-2 text-xs text-foreground">{children}</td>
+  ),
+
+  // Horizontal rule
+  hr: () => <hr className="border-border my-4" />,
+}
+
+function MessageContent({ content }: { content: string }) {
+  return (
+    <div className="prose prose-sm max-w-none">
+      <ReactMarkdown components={MarkdownComponents}>{content}</ReactMarkdown>
+    </div>
+  )
 }
 
 export function ChatMessage({
@@ -260,7 +308,7 @@ export function ChatMessage({
             <LoadingDots />
           ) : (
             <div className="space-y-2">
-              <div className="text-sm leading-relaxed whitespace-pre-wrap">
+              <div className="leading-relaxed">
                 <MessageContent content={message.content} />
               </div>
 
@@ -273,7 +321,6 @@ export function ChatMessage({
                       AI Analysis
                     </span>
                     {mcpMetadata?.user_analysis_used && (
-                      // <Database className="h-3 w-3 text-primary" title="Enhanced with live GitHub data" />
                       <Database className="h-3 w-3 text-primary" />
                     )}
                   </div>
@@ -342,7 +389,6 @@ export function ChatMessage({
                 {structuredData.projects.length} projects found
               </span>
               {mcpMetadata?.user_analysis_used && (
-                // <Database className="h-3 w-3 text-primary" title="Enhanced with real GitHub data" />
                 <Database className="h-3 w-3 text-primary" />
               )}
             </div>
@@ -404,7 +450,6 @@ export function ChatMessage({
 
       {isUser && (
         <Avatar className="h-8 w-8 mt-1 ring-2 ring-primary/20">
-          {/* <AvatarImage src="/placeholder.svg?height=32&width=32" /> */}
           <AvatarFallback className="bg-primary text-primary-foreground">
             <User className="h-4 w-4" />
           </AvatarFallback>
@@ -413,7 +458,6 @@ export function ChatMessage({
     </div>
   )
 }
-
 // // src/components/chat/chat-message.tsx (Enhanced Version)
 // "use client"
 
