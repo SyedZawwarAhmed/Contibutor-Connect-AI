@@ -7,13 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "build:mcp": "tsc src/mcp/github-mcp-server.ts --outDir dist --target es2022 --module nodenext --moduleResolution nodenext",
+    "start:mcp": "node dist/mcp/github-mcp-server.js",
+    "dev:mcp": "npm run build:mcp && npm run start:mcp"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",
     "@ai-sdk/openai": "latest",
+    "@ai-sdk/react": "^1.2.12",
     "@auth/prisma-adapter": "^2.10.0",
     "@hookform/resolvers": "^3.9.1",
+    "@modelcontextprotocol/sdk": "^1.15.0",
     "@prisma/client": "^6.11.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
