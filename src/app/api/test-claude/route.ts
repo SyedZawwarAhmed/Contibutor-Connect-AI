@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     // Test simple text generation
     const result = await generateText({
-      model: anthropic("claude-3-5-sonnet-20241022"),
+      model: anthropic("claude-4-sonnet-20250514"),
       prompt: "Say hello and confirm you are working correctly. Keep it brief.",
       maxTokens: 100,
     })
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await generateText({
-      model: anthropic("claude-3-5-sonnet-20241022"),
+      model: anthropic("claude-4-sonnet-20250514"),
       prompt: message || "Hello, please respond to confirm you're working.",
       maxTokens: 200,
     })
