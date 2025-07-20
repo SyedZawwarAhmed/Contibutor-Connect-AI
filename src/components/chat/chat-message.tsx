@@ -14,6 +14,11 @@ import {
   Users,
   Target,
 } from "lucide-react"
+import {
+  QlooDemographicsChart,
+  QlooCulturalOverview,
+  QlooProjectScoring,
+} from "@/components/qloo"
 import { LoadingDots } from "@/components/ui/loading-dots"
 import type { Message } from "ai"
 import { useEffect, useState, useRef } from "react"
@@ -48,6 +53,16 @@ interface StructuredResponse {
     primary_languages: string[]
     suggested_focus_areas: string[]
   }
+  culturally_enhanced_projects?: Array<{
+    name: string
+    description?: string
+    language?: string
+    topics?: string[]
+    stars?: number
+    culturalScore?: number
+    culturalTags?: string[]
+    matchedTags?: string[]
+  }>
 }
 
 interface MCPMetadata {
@@ -477,105 +492,28 @@ export function ChatMessage({
 
             {/* Qloo Cultural Intelligence Insights */}
             {qlooInsights && (
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
-                <div className="flex items-center gap-2 mb-2">
-                  <Brain className="h-4 w-4 text-purple-600" />
-                  <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
-                    Cultural Intelligence Analysis
-                  </span>
-                  <span className="text-xs text-purple-500">via Qloo</span>
-                </div>
-
-                {/* Cultural Tags */}
-                {qlooInsights.culturalTags &&
-                  qlooInsights.culturalTags.length > 0 && (
-                    <div className="mb-2">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Target className="h-3 w-3 text-purple-500" />
-                        <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
-                          Cultural Interests
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {qlooInsights.culturalTags
-                          .slice(0, 6)
-                          .map((tag, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-1 bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-300 text-xs rounded-full"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-
-                {/* Demographics */}
+              <div className="space-y-4">
+                {/* Cultural Overview */}
+                {qlooMetadata && (
+                  <QlooCulturalOverview
+                    insights={qlooInsights}
+                    metadata={qlooMetadata}
+                  />
+                )}
+                {/* Demographics Chart */}
                 {qlooInsights.demographics &&
                   qlooInsights.demographics.length > 0 && (
-                    <div className="mb-3">
-                      <div className="flex items-center gap-1 mb-2">
-                        <Users className="h-3 w-3 text-purple-500" />
-                        <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
-                          Community Demographics
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        {qlooInsights.demographics.slice(0, 3).map((demo: any, index: number) => {
-                          // Find the age group with highest affinity
-                          const ageEntries = Object.entries(demo.query.age as Record<string, number>)
-                          const topAge = ageEntries.reduce((a, b) => a[1] > b[1] ? a : b)
-                          const ageGroup = topAge[0].replace(/_/g, ' ')
-                          const ageScore = (topAge[1] * 100).toFixed(0)
-                          
-                          // Get gender preference
-                          const genderScore = demo.query.gender.female > 0 ? 
-                            `${(demo.query.gender.female * 100).toFixed(0)}% female` :
-                            `${(Math.abs(demo.query.gender.male) * 100).toFixed(0)}% male`
-                          
-                          // Extract interest category from entity_id
-                          const category = demo.entity_id.split(':').pop()?.replace(/media:|genre:|keyword:/, '') || 'general'
-                          
-                          return (
-                            <div key={index} className="flex items-center justify-between text-xs bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-purple-700 dark:text-purple-300 capitalize">
-                                  {category}
-                                </span>
-                                <span className="text-purple-600 dark:text-purple-400">
-                                  {ageGroup}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-purple-500">
-                                <span>{ageScore}%</span>
-                                <span>•</span>
-                                <span>{genderScore}</span>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
+                    <QlooDemographicsChart
+                      demographics={qlooInsights.demographics}
+                    />
                   )}
 
-                {/* Related Interests */}
-                {qlooInsights.relatedInterests &&
-                  qlooInsights.relatedInterests.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-1 mb-1">
-                        <Sparkles className="h-3 w-3 text-purple-500" />
-                        <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
-                          Related Interests
-                        </span>
-                      </div>
-                      <div className="text-xs text-purple-600 dark:text-purple-400">
-                        {qlooInsights.relatedInterests
-                          .slice(0, 4)
-                          .map(interest => interest.name)
-                          .join(", ")}
-                      </div>
-                    </div>
+                {/* Project Scoring (if culturally enhanced projects are available) */}
+                {structuredData?.culturally_enhanced_projects &&
+                  structuredData.culturally_enhanced_projects.length > 0 && (
+                    <QlooProjectScoring
+                      projects={structuredData.culturally_enhanced_projects}
+                    />
                   )}
               </div>
             )}

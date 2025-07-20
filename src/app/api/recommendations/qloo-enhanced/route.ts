@@ -171,7 +171,10 @@ export async function POST(req: NextRequest) {
     // Add Qloo metadata to response
     return NextResponse.json({
       success: true,
-      data: recommendations,
+      data: {
+        ...recommendations,
+        culturally_enhanced_projects: culturallyEnhancedProjects.slice(0, 10) // Include top 10 enhanced projects
+      },
       metadata: {
         qloo_insights_used: !!qlooInsights,
         cultural_tags_identified: qlooInsights?.culturalTags?.length || 0,
