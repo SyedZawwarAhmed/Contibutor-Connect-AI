@@ -138,6 +138,17 @@ export function ProjectCard({
               </Badge>
             )}
 
+            {/* Cultural Score Badge */}
+            {project.culturalScore !== undefined && (
+              <Badge
+                variant="outline"
+                className="text-xs flex items-center gap-1 bg-qloo-accent/50 text-qloo-primary border-qloo-border"
+              >
+                <TrendingUp className="h-3 w-3" />
+                {Math.round(project.culturalScore)}% Cultural Fit
+              </Badge>
+            )}
+
             {/* MCP Badge */}
             {showMCPBadge && (
               <div className="w-fit">
@@ -175,6 +186,23 @@ export function ProjectCard({
             </Badge>
           )}
         </div>
+
+        {/* Cultural Tags */}
+        {project.culturalTags && project.culturalTags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            <span className="text-xs text-qloo-muted-foreground font-medium mr-1">Cultural:</span>
+            {project.culturalTags.slice(0, 3).map(tag => (
+              <Badge key={tag} className="text-xs bg-qloo-secondary text-qloo-secondary-foreground">
+                {tag}
+              </Badge>
+            ))}
+            {project.culturalTags.length > 3 && (
+              <Badge variant="outline" className="text-xs border-qloo-border text-qloo-primary">
+                +{project.culturalTags.length - 3} more
+              </Badge>
+            )}
+          </div>
+        )}
 
         {/* Contribution Types */}
         {enhanced &&

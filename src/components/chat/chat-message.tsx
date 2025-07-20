@@ -4,18 +4,12 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card } from "@/components/ui/card"
 import { ProjectCard } from "./project-card"
-import {
-  Bot,
-  User,
-  Sparkles,
-  Database,
-  Zap,
-  Brain,
-} from "lucide-react"
+import { Bot, User, Sparkles, Database, Zap, Brain } from "lucide-react"
 import {
   QlooDemographicsChart,
   QlooCulturalOverview,
   QlooProjectScoring,
+  QlooRepoConnectionFlow,
 } from "@/components/qloo"
 import { LoadingDots } from "@/components/ui/loading-dots"
 import type { Message } from "ai"
@@ -41,6 +35,9 @@ export interface ProjectData {
   contributionTypes: string[]
   contributionScore?: number
   recommendationReason?: string
+  culturalScore?: number
+  culturalTags?: string[]
+  matchedTags?: string[]
 }
 
 interface StructuredResponse {
@@ -95,6 +92,7 @@ interface QlooInsights {
     name: string
     popularity?: number
   }>
+  qlooUrns?: string[]
 }
 
 const MarkdownComponents = {
@@ -364,7 +362,6 @@ export function ChatMessage({
     }
   }
 
-
   return (
     <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
       {!isUser && (
@@ -567,6 +564,34 @@ export function ChatMessage({
               </div>
             )}
 
+            {/* Qloo → GitHub Repository Connection Flow */}
+            {qlooInsights && qlooMetadata?.qloo_insights_used && (
+              <QlooRepoConnectionFlow
+                userQuery={message.content}
+                extractedUrns={qlooInsights.qlooUrns}
+                culturalTags={qlooInsights.culturalTags}
+                repositoryRecommendations={
+                  structuredData?.projects?.map(project => ({
+                    name: project.name,
+                    description: project.description,
+                    cultural_score: project.culturalScore,
+                    demographic_match: undefined, // Not available in regular projects
+                    url: project.githubUrl,
+                    stars: project.stars,
+                    language: project.languages?.[0],
+                  })) || []
+                }
+                metadata={{
+                  total_repos_analyzed:
+                    mcpMetadata?.mcp_search_total ||
+                    structuredData?.projects?.length,
+                  cultural_scoring_applied:
+                    qlooMetadata?.cultural_scoring_applied,
+                  demographic_factors_used: qlooMetadata?.demographics_analyzed,
+                }}
+              />
+            )}
+
             {structuredData.projects.map((project, index) => (
               <ProjectCard
                 key={`${project.name}-${index}`}
@@ -583,6 +608,9 @@ export function ChatMessage({
                   contributionTypes: project.contributionTypes,
                   contributionScore: project.contributionScore,
                   recommendationReason: project.recommendationReason,
+                  culturalScore: project.culturalScore,
+                  culturalTags: project.culturalTags,
+                  matchedTags: project.matchedTags,
                 }}
                 enhanced={true}
                 showMCPBadge={mcpMetadata?.user_analysis_used}
