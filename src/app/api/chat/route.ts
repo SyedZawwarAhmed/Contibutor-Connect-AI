@@ -2,16 +2,16 @@
 import { auth } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
 import { streamText } from "ai"
-import { anthropic } from "@ai-sdk/anthropic"
+import { google } from "@ai-sdk/google"
 import { prisma } from "@/lib/prisma"
 import { llmService } from "@/lib/llm"
 import { withRemoteMCPClient } from "@/lib/mcp-client-remote"
-// Configure Claude model
+// Configure Google model
 const getModel = () => {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error("ANTHROPIC_API_KEY is not configured")
+  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not configured")
   }
-  return anthropic("claude-4-sonnet-20250514")
+  return google("gemini-2.0-flash")
 }
 
 // Enhanced system context with MCP capabilities
@@ -48,6 +48,13 @@ When users ask about finding projects or contributions, I'll:
 - Analyze project health and contribution opportunities
 - Consider user experience level and preferences
 - Provide specific repository recommendations with actionable next steps
+- **ALWAYS include full GitHub URLs (https://github.com/owner/repo) for every project I recommend**
+
+IMPORTANT: When recommending projects, you MUST include:
+1. The project name in owner/repo format
+2. The complete GitHub URL (https://github.com/owner/repo) - this is REQUIRED for every recommendation
+3. A brief description of the project
+4. Why it's a good match for the user
 
 I'm encouraging, helpful, and focus on building confidence in open-source contribution. I use conversational tone while being informative and specific.
 `

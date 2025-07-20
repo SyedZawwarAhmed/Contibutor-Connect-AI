@@ -133,16 +133,39 @@ const MarkdownComponents = {
   },
 
   // Links
-  a: ({ href, children }: any) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
-    >
-      {children}
-    </a>
-  ),
+  a: ({ href, children }: any) => {
+    // Check if it's a GitHub link
+    const isGitHubLink = href?.includes('github.com')
+    
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${
+          isGitHubLink 
+            ? "text-primary hover:text-primary/80 underline underline-offset-2 font-medium inline-flex items-center gap-1"
+            : "text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
+        }`}
+      >
+        {children}
+        {isGitHubLink && (
+          <svg
+            className="w-3 h-3 inline-block"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.865 8.17 6.84 9.49.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.71-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.93 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.03A9.58 9.58 0 0110 4.84c.85 0 1.7.11 2.5.33 1.91-1.3 2.75-1.03 2.75-1.03.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48A10 10 0 0020 10c0-5.523-4.477-10-10-10z"
+              clipRule="evenodd"
+            />
+          </svg>
+        )}
+      </a>
+    )
+  },
 
   // Blockquotes
   blockquote: ({ children }: any) => (
