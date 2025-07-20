@@ -6,6 +6,8 @@ import { google } from "@ai-sdk/google"
 import { prisma } from "@/lib/prisma"
 import { llmService } from "@/lib/llm"
 import { withRemoteMCPClient } from "@/lib/mcp-client-remote"
+import { qlooClient } from "@/lib/qloo/qloo-client"
+import { mapTechToCulture } from "@/lib/qloo/qloo-mapper"
 // Configure Google model
 const getModel = () => {
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
@@ -14,11 +16,13 @@ const getModel = () => {
   return google("gemini-2.0-flash")
 }
 
-// Enhanced system context with MCP capabilities
-const createEnhancedSystemPrompt = (userProfile: any, mcpContext?: string) => `
-You are ContributorConnect AI, an intelligent assistant powered by real-time GitHub data that helps developers discover open-source projects perfect for their skills and interests.
+// Enhanced system context with MCP and Qloo capabilities
+const createEnhancedSystemPrompt = (userProfile: any, mcpContext?: string, qlooContext?: string) => `
+You are ContributorConnect AI, an intelligent assistant powered by real-time GitHub data AND cultural intelligence that helps developers discover open-source projects perfect for their skills, interests, and personality.
 
 ${mcpContext ? `REAL-TIME GITHUB CONTEXT:\n${mcpContext}\n` : ""}
+
+${qlooContext ? `CULTURAL INTELLIGENCE CONTEXT (via Qloo):\n${qlooContext}\n` : ""}
 
 User Profile Context:
 ${userProfile?.githubUsername ? `- GitHub: @${userProfile.githubUsername}` : ""}
@@ -39,14 +43,18 @@ ${
 
 Your capabilities include:
 1. **Live GitHub Data Access**: I can search real GitHub repositories and analyze user profiles in real-time
-2. **Smart Project Discovery**: I find active projects that match your skills and contribution preferences
-3. **Community Analysis**: I evaluate project health, beginner-friendliness, and maintainer activity
-4. **Contribution Guidance**: I provide specific advice on how to get started with contributions
+2. **Cultural Intelligence**: I use Qloo's taste AI to understand your interests beyond coding and find projects that align with your personality
+3. **Smart Project Discovery**: I find active projects that match your technical skills AND cultural preferences  
+4. **Community Analysis**: I evaluate project health, beginner-friendliness, and community cultural fit
+5. **Demographic Matching**: I consider demographic alignment to ensure you'll fit in with project communities
+6. **Contribution Guidance**: I provide specific advice on how to get started with contributions
 
 When users ask about finding projects or contributions, I'll:
 - Search live GitHub data for relevant repositories
+- Apply cultural intelligence to understand personality fit beyond technical skills
 - Analyze project health and contribution opportunities
-- Consider user experience level and preferences
+- Consider user experience level, preferences, AND cultural alignment
+- Match with communities that share similar demographics and interests
 - Provide specific repository recommendations with actionable next steps
 - **ALWAYS include full GitHub URLs (https://github.com/owner/repo) for every project I recommend**
 
@@ -54,9 +62,11 @@ IMPORTANT: When recommending projects, you MUST include:
 1. The project name in owner/repo format
 2. The complete GitHub URL (https://github.com/owner/repo) - this is REQUIRED for every recommendation
 3. A brief description of the project
-4. Why it's a good match for the user
+4. Why it's technically a good match
+5. How it aligns with their cultural interests and personality
+6. Why the community would be a good cultural fit
 
-I'm encouraging, helpful, and focus on building confidence in open-source contribution. I use conversational tone while being informative and specific.
+I'm encouraging, helpful, and focus on building confidence in open-source contribution. I use conversational tone while being informative and specific. I go beyond just technical matching to find projects where developers will truly thrive culturally and socially.
 `
 
 export async function POST(req: NextRequest) {
@@ -243,6 +253,75 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Enhanced Qloo cultural intelligence context gathering
+    let qlooContext = ""
+    if (intent.intent === "project_search" && user?.githubUsername && process.env.QLOO_API_KEY) {
+      try {
+        console.log("Gathering Qloo cultural insights...")
+        
+        // Extract technical interests from user query and profile
+        const queryTechTerms = extractTechFromQuery(lastMessage)
+        const userLanguages = mcpData?.userAnalysis?.technical_profile?.primary_languages 
+          ? Object.keys(mcpData.userAnalysis.technical_profile.primary_languages)
+          : []
+        
+        // Map to cultural tags
+        const culturalTags = mapTechToCulture([...queryTechTerms, ...userLanguages])
+        
+        // Get cultural insights
+        const [demographics, tasteAnalysis] = await Promise.allSettled([
+          qlooClient.getDemographics(culturalTags),
+          qlooClient.getTasteAnalysis(culturalTags)
+        ])
+        
+        // Build cultural context
+        let contextParts = ["CULTURAL INTELLIGENCE ANALYSIS:"]
+        
+        // Add mapped cultural interests
+        if (culturalTags.length > 0) {
+          contextParts.push(`Identified Cultural Interests: ${culturalTags.slice(0, 8).join(", ")}`)
+        }
+        
+        // Add demographic insights
+        if (demographics.status === 'fulfilled' && demographics.value.demographics?.length > 0) {
+          const topDemo = demographics.value.demographics[0]
+          contextParts.push(
+            `Primary Demographic Match: ${topDemo.age_group} ${topDemo.gender} (${(topDemo.affinity_score * 100).toFixed(1)}% affinity)`
+          )
+          
+          // Add top 3 demographics
+          const topDemos = demographics.value.demographics.slice(0, 3)
+          contextParts.push(
+            `Demographic Profile: ${topDemos.map(d => 
+              `${d.age_group} ${d.gender} (${(d.affinity_score * 100).toFixed(0)}%)`
+            ).join(", ")}`
+          )
+        }
+        
+        // Add taste connections
+        if (tasteAnalysis.status === 'fulfilled' && tasteAnalysis.value.tags?.length > 0) {
+          const relatedInterests = tasteAnalysis.value.tags.slice(0, 6).map(t => t.name)
+          contextParts.push(`Related Cultural Interests: ${relatedInterests.join(", ")}`)
+        }
+        
+        // Add location insights if available
+        if (user.location) {
+          contextParts.push(`Location Context: Based in ${user.location} - consider timezone and regional tech communities`)
+        }
+        
+        contextParts.push(
+          "\nThis cultural analysis helps identify projects where the developer will fit in socially and culturally, not just technically."
+        )
+        
+        qlooContext = contextParts.join("\n")
+        
+        console.log("Qloo cultural insights gathered successfully")
+      } catch (qlooError) {
+        console.error("Qloo context gathering failed:", qlooError)
+        qlooContext = "Note: Cultural intelligence temporarily unavailable, focusing on technical matching."
+      }
+    }
+
     // If user is asking for project recommendations and structured mode requested
     if (intent.intent === "project_search" && structured) {
       try {
@@ -277,8 +356,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Build enhanced system prompt with MCP context
-    const systemPrompt = createEnhancedSystemPrompt(user, mcpContext)
+    // Build enhanced system prompt with MCP and Qloo context
+    const systemPrompt = createEnhancedSystemPrompt(user, mcpContext, qlooContext)
 
     // Create the AI stream with enhanced context
     const result = await streamText({
@@ -296,6 +375,20 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// Helper function to extract technical terms from query
+function extractTechFromQuery(query: string): string[] {
+  const techKeywords = [
+    "javascript", "typescript", "python", "java", "go", "rust", "react", "vue",
+    "angular", "node", "django", "flask", "spring", "kubernetes", "docker",
+    "aws", "azure", "gcp", "ml", "ai", "blockchain", "web3", "mobile", "ios",
+    "android", "frontend", "backend", "fullstack", "devops", "database", "api",
+    "nextjs", "express", "tensorflow", "pytorch", "mongodb", "postgresql"
+  ]
+  
+  const queryLower = query.toLowerCase()
+  return techKeywords.filter(keyword => queryLower.includes(keyword))
 }
 
 // export async function POST(req: NextRequest) {

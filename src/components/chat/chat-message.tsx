@@ -4,7 +4,16 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card } from "@/components/ui/card"
 import { ProjectCard } from "./project-card"
-import { Bot, User, Sparkles, Database, Zap } from "lucide-react"
+import {
+  Bot,
+  User,
+  Sparkles,
+  Database,
+  Zap,
+  Brain,
+  Users,
+  Target,
+} from "lucide-react"
 import { LoadingDots } from "@/components/ui/loading-dots"
 import type { Message } from "ai"
 import { useEffect, useState, useRef } from "react"
@@ -47,6 +56,27 @@ interface MCPMetadata {
   trending_repos_found?: number
   mcp_error?: string
   user_analysis_used?: boolean
+}
+
+interface QlooMetadata {
+  qloo_insights_used?: boolean
+  cultural_tags_identified?: number
+  demographics_analyzed?: boolean
+  cultural_scoring_applied?: boolean
+  total_projects_analyzed?: number
+}
+
+interface QlooInsights {
+  culturalTags?: string[]
+  demographics?: Array<{
+    age_group: string
+    gender: string
+    affinity_score: number
+  }>
+  relatedInterests?: Array<{
+    name: string
+    popularity?: number
+  }>
 }
 
 const MarkdownComponents = {
@@ -135,15 +165,15 @@ const MarkdownComponents = {
   // Links
   a: ({ href, children }: any) => {
     // Check if it's a GitHub link
-    const isGitHubLink = href?.includes('github.com')
-    
+    const isGitHubLink = href?.includes("github.com")
+
     return (
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
         className={`${
-          isGitHubLink 
+          isGitHubLink
             ? "text-primary hover:text-primary/80 underline underline-offset-2 font-medium inline-flex items-center gap-1"
             : "text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
         }`}
@@ -217,6 +247,8 @@ export function ChatMessage({
   const [structuredData, setStructuredData] =
     useState<StructuredResponse | null>(null)
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
+  const [qlooMetadata, setQlooMetadata] = useState<QlooMetadata | null>(null)
+  const [qlooInsights, setQlooInsights] = useState<QlooInsights | null>(null)
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const processedMessageIds = useRef(new Set<string>())
 
@@ -256,7 +288,27 @@ export function ChatMessage({
 
   const fetchEnhancedRecommendations = async (query: string) => {
     try {
-      // Try MCP-enhanced recommendations first
+      // Try Qloo-enhanced recommendations first (includes MCP + cultural intelligence)
+      const qlooResponse = await fetch("/api/recommendations/qloo-enhanced", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, use_qloo: true }),
+      })
+
+      if (qlooResponse.ok) {
+        const qlooData = await qlooResponse.json()
+        console.log("Qloo enhanced data", qlooData)
+
+        if (qlooData.success && qlooData.data.projects) {
+          setStructuredData(qlooData.data)
+          setQlooMetadata(qlooData.metadata)
+          setQlooInsights(qlooData.qloo_insights)
+          console.log("qlooData", qlooData)
+          return
+        }
+      }
+
+      // Fallback to MCP-enhanced recommendations
       const mcpResponse = await fetch("/api/recommendations/mcp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -405,16 +457,128 @@ export function ChatMessage({
             <div className="flex items-center gap-2 p-2 bg-primary/5 rounded-lg border border-primary/20">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold text-primary">
-                {mcpMetadata?.user_analysis_used ? "Live GitHub" : "AI"}{" "}
+                {qlooMetadata?.qloo_insights_used
+                  ? "Culturally-Aware AI"
+                  : mcpMetadata?.user_analysis_used
+                  ? "Live GitHub"
+                  : "AI"}{" "}
                 Recommendations
               </span>
               <span className="text-xs text-muted-foreground ml-auto">
                 {structuredData.projects.length} projects found
               </span>
+              {qlooMetadata?.qloo_insights_used && (
+                <Brain className="h-3 w-3 text-primary" />
+              )}
               {mcpMetadata?.user_analysis_used && (
                 <Database className="h-3 w-3 text-primary" />
               )}
             </div>
+
+            {/* Qloo Cultural Intelligence Insights */}
+            {qlooInsights && (
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Brain className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
+                    Cultural Intelligence Analysis
+                  </span>
+                  <span className="text-xs text-purple-500">via Qloo</span>
+                </div>
+
+                {/* Cultural Tags */}
+                {qlooInsights.culturalTags &&
+                  qlooInsights.culturalTags.length > 0 && (
+                    <div className="mb-2">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Target className="h-3 w-3 text-purple-500" />
+                        <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                          Cultural Interests
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {qlooInsights.culturalTags
+                          .slice(0, 6)
+                          .map((tag, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-300 text-xs rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Demographics */}
+                {qlooInsights.demographics &&
+                  qlooInsights.demographics.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-1 mb-2">
+                        <Users className="h-3 w-3 text-purple-500" />
+                        <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                          Community Demographics
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {qlooInsights.demographics.slice(0, 3).map((demo: any, index: number) => {
+                          // Find the age group with highest affinity
+                          const ageEntries = Object.entries(demo.query.age as Record<string, number>)
+                          const topAge = ageEntries.reduce((a, b) => a[1] > b[1] ? a : b)
+                          const ageGroup = topAge[0].replace(/_/g, ' ')
+                          const ageScore = (topAge[1] * 100).toFixed(0)
+                          
+                          // Get gender preference
+                          const genderScore = demo.query.gender.female > 0 ? 
+                            `${(demo.query.gender.female * 100).toFixed(0)}% female` :
+                            `${(Math.abs(demo.query.gender.male) * 100).toFixed(0)}% male`
+                          
+                          // Extract interest category from entity_id
+                          const category = demo.entity_id.split(':').pop()?.replace(/media:|genre:|keyword:/, '') || 'general'
+                          
+                          return (
+                            <div key={index} className="flex items-center justify-between text-xs bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-purple-700 dark:text-purple-300 capitalize">
+                                  {category}
+                                </span>
+                                <span className="text-purple-600 dark:text-purple-400">
+                                  {ageGroup}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-purple-500">
+                                <span>{ageScore}%</span>
+                                <span>•</span>
+                                <span>{genderScore}</span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Related Interests */}
+                {qlooInsights.relatedInterests &&
+                  qlooInsights.relatedInterests.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1 mb-1">
+                        <Sparkles className="h-3 w-3 text-purple-500" />
+                        <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                          Related Interests
+                        </span>
+                      </div>
+                      <div className="text-xs text-purple-600 dark:text-purple-400">
+                        {qlooInsights.relatedInterests
+                          .slice(0, 4)
+                          .map(interest => interest.name)
+                          .join(", ")}
+                      </div>
+                    </div>
+                  )}
+              </div>
+            )}
 
             {/* MCP metadata info */}
             {mcpMetadata && (
@@ -441,6 +605,34 @@ export function ChatMessage({
                     <span className="text-warning">
                       ⚠️ Limited data: {mcpMetadata.mcp_error}
                     </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Qloo metadata info */}
+            {qlooMetadata && (
+              <div className="text-xs text-muted-foreground bg-purple-50 dark:bg-purple-900/20 p-2 rounded border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center gap-4 flex-wrap">
+                  {qlooMetadata.qloo_insights_used && (
+                    <span className="flex items-center gap-1">
+                      <Brain className="h-3 w-3 text-purple-500" />
+                      <span className="text-purple-600 dark:text-purple-400">
+                        Qloo Cultural Intelligence
+                      </span>
+                    </span>
+                  )}
+                  {qlooMetadata.cultural_tags_identified !== undefined && (
+                    <span>
+                      🎯 {qlooMetadata.cultural_tags_identified} cultural
+                      interests mapped
+                    </span>
+                  )}
+                  {qlooMetadata.demographics_analyzed && (
+                    <span>👥 Demographics analyzed</span>
+                  )}
+                  {qlooMetadata.cultural_scoring_applied && (
+                    <span>⭐ Cultural scoring applied</span>
                   )}
                 </div>
               </div>
