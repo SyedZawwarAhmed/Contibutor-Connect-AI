@@ -571,15 +571,26 @@ export function ChatMessage({
                 extractedUrns={qlooInsights.qlooUrns}
                 culturalTags={qlooInsights.culturalTags}
                 repositoryRecommendations={
-                  structuredData?.projects?.map(project => ({
-                    name: project.name,
-                    description: project.description,
-                    cultural_score: project.culturalScore,
-                    demographic_match: undefined, // Not available in regular projects
-                    url: project.githubUrl,
-                    stars: project.stars,
-                    language: project.languages?.[0],
-                  })) || []
+                  // Use culturally enhanced projects if available, otherwise fall back to regular projects
+                  (structuredData?.culturally_enhanced_projects && structuredData.culturally_enhanced_projects.length > 0)
+                    ? structuredData.culturally_enhanced_projects.map(project => ({
+                        name: project.name,
+                        description: project.description,
+                        cultural_score: project.culturalScore,
+                        demographic_match: undefined, // Not available in culturally_enhanced_projects
+                        url: '#', // Not available in culturally_enhanced_projects
+                        stars: project.stars,
+                        language: project.language,
+                      }))
+                    : structuredData?.projects?.map(project => ({
+                        name: project.name,
+                        description: project.description,
+                        cultural_score: project.culturalScore,
+                        demographic_match: undefined,
+                        url: project.githubUrl,
+                        stars: project.stars,
+                        language: project.languages?.[0],
+                      })) || []
                 }
                 metadata={{
                   total_repos_analyzed:

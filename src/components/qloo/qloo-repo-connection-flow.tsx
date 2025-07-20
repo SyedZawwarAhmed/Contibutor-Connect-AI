@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   Card,
   CardContent,
@@ -18,7 +19,21 @@ import {
   TrendingUp,
   Users,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react"
+
+interface DetailItem {
+  label: string
+  value: string
+  type: string
+  extra?: string
+}
+
+interface StepDetails {
+  title: string
+  description: string
+  data: DetailItem[]
+}
 
 interface QlooRepoConnectionFlowProps {
   userQuery: string
@@ -49,14 +64,19 @@ export function QlooRepoConnectionFlow({
   metadata,
   className,
 }: QlooRepoConnectionFlowProps) {
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set())
+
+  const toggleStep = (stepIndex: number) => {
+    const newExpanded = new Set(expandedSteps)
+    if (newExpanded.has(stepIndex)) {
+      newExpanded.delete(stepIndex)
+    } else {
+      newExpanded.add(stepIndex)
+    }
+    setExpandedSteps(newExpanded)
+  }
+
   const steps = [
-    // {
-    //   title: "User Input",
-    //   description: "Your technical interests and preferences",
-    //   icon: Target,
-    //   content: userQuery,
-    //   status: "completed"
-    // },
     {
       title: "URN Extraction",
       description: "Convert tech interests to cultural entities",
@@ -66,6 +86,23 @@ export function QlooRepoConnectionFlow({
           ? `${extractedUrns.length} URN tags mapped`
           : "Processing...",
       status: extractedUrns.length > 0 ? "completed" : "processing",
+      hasDetails: extractedUrns.length > 0,
+      details: {
+        title: "Extracted URN Tags",
+        description: "Technical interests converted to Qloo cultural entities:",
+        data: extractedUrns.map(
+          urn =>
+            ({
+              label:
+                urn
+                  .split(":")
+                  .pop()
+                  ?.replace(/media:|genre:|keyword:/, "") || urn,
+              value: urn,
+              type: "URN",
+            } as DetailItem)
+        ),
+      },
     },
     {
       title: "Cultural Analysis",
@@ -76,6 +113,19 @@ export function QlooRepoConnectionFlow({
           ? `${culturalTags.length} cultural insights`
           : "Analyzing...",
       status: culturalTags.length > 0 ? "completed" : "processing",
+      hasDetails: culturalTags.length > 0,
+      details: {
+        title: "Cultural Insights",
+        description: "Identified cultural interests and preferences:",
+        data: culturalTags.map(
+          tag =>
+            ({
+              label: tag,
+              value: tag,
+              type: "Cultural Tag",
+            } as DetailItem)
+        ),
+      },
     },
     {
       title: "Repository Scoring",
@@ -89,6 +139,12 @@ export function QlooRepoConnectionFlow({
         repositoryRecommendations && repositoryRecommendations.length > 0
           ? "completed"
           : "processing",
+      hasDetails: false, // Disabled for now
+      details: {
+        title: "Repository Scoring Results",
+        description: "Repository scoring details temporarily disabled",
+        data: []
+      },
     },
   ]
 
@@ -107,46 +163,107 @@ export function QlooRepoConnectionFlow({
         {/* Process Flow */}
         <div className="space-y-4">
           {steps.map((step, index) => (
-            <div key={index} className="flex items-center gap-4">
-              {/* Step Icon */}
-              <div
-                className={`p-2 rounded-full border-2 ${
-                  step.status === "completed"
-                    ? "bg-qloo-primary border-qloo-primary text-white"
-                    : step.status === "processing"
-                    ? "bg-qloo-secondary border-qloo-border text-qloo-primary animate-pulse"
-                    : "bg-qloo-muted border-qloo-border text-qloo-muted-foreground"
-                }`}
-              >
-                <step.icon className="h-4 w-4" />
-              </div>
-
-              {/* Step Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-medium text-sm text-qloo-primary-foreground">
-                    {step.title}
-                  </h4>
-                  {step.status === "completed" && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs border-qloo-primary text-qloo-primary"
-                    >
-                      ✓
-                    </Badge>
-                  )}
+            <div key={index} className="space-y-2">
+              <div className="flex items-center gap-4">
+                {/* Step Icon */}
+                <div
+                  className={`p-2 rounded-full border-2 ${
+                    step.status === "completed"
+                      ? "bg-qloo-primary border-qloo-primary text-white"
+                      : step.status === "processing"
+                      ? "bg-qloo-secondary border-qloo-border text-qloo-primary animate-pulse"
+                      : "bg-qloo-muted border-qloo-border text-qloo-muted-foreground"
+                  }`}
+                >
+                  <step.icon className="h-4 w-4" />
                 </div>
-                <p className="text-xs text-qloo-muted-foreground mb-1">
-                  {step.description}
-                </p>
-                <p className="text-xs font-medium text-qloo-primary">
-                  {step.content}
-                </p>
+
+                {/* Step Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-medium text-sm text-qloo-primary-foreground">
+                      {step.title}
+                    </h4>
+                    {step.status === "completed" && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs border-qloo-primary text-qloo-primary"
+                      >
+                        ✓
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-qloo-muted-foreground mb-1">
+                    {step.description}
+                  </p>
+                  <p className="text-xs font-medium text-qloo-primary">
+                    {step.content}
+                  </p>
+                </div>
+
+                {/* Expand/Collapse Button */}
+                {step.hasDetails && (
+                  <button
+                    onClick={() => toggleStep(index)}
+                    className="p-1 rounded hover:bg-qloo-accent/50 transition-colors"
+                    aria-label={
+                      expandedSteps.has(index)
+                        ? "Collapse details"
+                        : "Expand details"
+                    }
+                  >
+                    {expandedSteps.has(index) ? (
+                      <ChevronDown className="h-4 w-4 text-qloo-primary" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-qloo-border hover:text-qloo-primary" />
+                    )}
+                  </button>
+                )}
+
+                {/* Arrow to next step */}
+                {!step.hasDetails && index < steps.length - 1 && (
+                  <ChevronRight className="h-4 w-4 text-qloo-border" />
+                )}
               </div>
 
-              {/* Arrow */}
-              {index < steps.length - 1 && (
-                <ChevronRight className="h-4 w-4 text-qloo-border" />
+              {/* Expandable Details */}
+              {step.hasDetails && expandedSteps.has(index) && (
+                <div className="ml-12 mt-3 p-4 bg-qloo-accent/30 rounded-lg border border-qloo-border">
+                  <h5 className="font-medium text-sm text-qloo-primary-foreground mb-2">
+                    {step.details.title}
+                  </h5>
+                  <p className="text-xs text-qloo-muted-foreground mb-3">
+                    {step.details.description}
+                  </p>
+                  <div className="space-y-2">
+                    {step.details.data.map((item, itemIndex) => (
+                      <div
+                        key={itemIndex}
+                        className="flex items-center justify-between p-2 bg-qloo-muted/50 rounded border border-qloo-border"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className="text-xs border-qloo-border text-qloo-primary"
+                          >
+                            {item.type}
+                          </Badge>
+                          <span className="text-sm font-medium text-qloo-primary-foreground">
+                            {item.label}
+                          </span>
+                          {item.extra && (
+                            <Badge className="text-xs bg-qloo-secondary text-qloo-secondary-foreground">
+                              {item.extra}
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-qloo-muted-foreground font-mono">
+                          {item.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           ))}
