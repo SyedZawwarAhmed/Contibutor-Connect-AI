@@ -185,7 +185,7 @@ ${
 BEGINNER-FRIENDLY OPTIONS:
 ${beginnerData
   .map(
-    (repo, i) => `
+    (repo: any, i: number) => `
 ${i + 1}. ${repo.name} (${repo.stars || 0} stars)
    ${repo.description || "No description"}
    URL: ${repo.url}
@@ -418,7 +418,7 @@ export async function GET(req: NextRequest) {
         const searchResults = await client.searchRepositories({
           query: `${searchLanguage} contributions`,
           language: searchLanguage,
-          difficulty: difficulty === "any" ? undefined : difficulty,
+          difficulty: (difficulty as string) === "any" ? undefined : difficulty,
           has_good_first_issues: difficulty === "beginner",
           active_recently: true,
         })

@@ -128,10 +128,15 @@ export async function POST(req: NextRequest) {
     let culturallyEnhancedProjects = mockProjects
     if (qlooInsights.culturalTags && !qlooInsights.error) {
       try {
-        culturallyEnhancedProjects = await qlooClient.findCulturallySimilarProjects(
+        const scored = await qlooClient.findCulturallySimilarProjects(
           qlooInsights.culturalTags,
-          mockProjects
+          mockProjects.map(p => ({ name: p.name, topics: p.topics, language: p.language }))
         )
+        // Merge the scores back with full project data
+        culturallyEnhancedProjects = mockProjects.map(project => {
+          const scoredProject = scored.find(s => s.name === project.name)
+          return { ...project, ...scoredProject }
+        })
         console.log("4. Cultural scoring applied successfully")
       } catch (error) {
         console.error("Cultural scoring error:", error)

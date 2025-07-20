@@ -27,7 +27,7 @@ export function Header({ session }: HeaderProps) {
 
   const navigation = [
     { name: "Chat", href: "/chat", icon: MessageSquare },
-    { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
+    // { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
   ]
 
   return (

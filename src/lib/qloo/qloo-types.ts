@@ -34,9 +34,15 @@ export interface QlooTag {
 }
 
 export interface QlooInsightsResponse {
+  success?: boolean
   entities?: QlooEntity[]
   demographics?: QlooDemographic[]
   tags?: QlooTag[]
+  results?: {
+    entities?: QlooEntity[]
+    demographics?: QlooDemographic[]
+    tags?: QlooTag[]
+  }
   metadata?: {
     total_count?: number
     query_id?: string

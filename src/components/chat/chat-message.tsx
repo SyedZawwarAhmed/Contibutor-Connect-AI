@@ -1,7 +1,7 @@
 // src/components/chat/chat-message.tsx (Enhanced with MCP Support)
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card } from "@/components/ui/card"
 import { ProjectCard } from "./project-card"
 import {
@@ -11,8 +11,6 @@ import {
   Database,
   Zap,
   Brain,
-  Users,
-  Target,
 } from "lucide-react"
 import {
   QlooDemographicsChart,
@@ -84,9 +82,14 @@ interface QlooMetadata {
 interface QlooInsights {
   culturalTags?: string[]
   demographics?: Array<{
-    age_group: string
-    gender: string
-    affinity_score: number
+    entity_id: string
+    query: {
+      age: Record<string, number>
+      gender: {
+        male: number
+        female: number
+      }
+    }
   }>
   relatedInterests?: Array<{
     name: string
@@ -361,18 +364,6 @@ export function ChatMessage({
     }
   }
 
-  const formatDifficulty = (difficulty: string) => {
-    switch (difficulty) {
-      case "beginner":
-        return { text: "Beginner Friendly", color: "text-green-600" }
-      case "intermediate":
-        return { text: "Intermediate", color: "text-yellow-600" }
-      case "advanced":
-        return { text: "Advanced", color: "text-red-600" }
-      default:
-        return { text: "Any Level", color: "text-gray-600" }
-    }
-  }
 
   return (
     <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>

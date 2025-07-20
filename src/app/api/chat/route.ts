@@ -17,12 +17,20 @@ const getModel = () => {
 }
 
 // Enhanced system context with MCP and Qloo capabilities
-const createEnhancedSystemPrompt = (userProfile: any, mcpContext?: string, qlooContext?: string) => `
+const createEnhancedSystemPrompt = (
+  userProfile: any,
+  mcpContext?: string,
+  qlooContext?: string
+) => `
 You are ContributorConnect AI, an intelligent assistant powered by real-time GitHub data AND cultural intelligence that helps developers discover open-source projects perfect for their skills, interests, and personality.
 
 ${mcpContext ? `REAL-TIME GITHUB CONTEXT:\n${mcpContext}\n` : ""}
 
-${qlooContext ? `CULTURAL INTELLIGENCE CONTEXT (via Qloo):\n${qlooContext}\n` : ""}
+${
+  qlooContext
+    ? `CULTURAL INTELLIGENCE CONTEXT (via Qloo):\n${qlooContext}\n`
+    : ""
+}
 
 User Profile Context:
 ${userProfile?.githubUsername ? `- GitHub: @${userProfile.githubUsername}` : ""}
@@ -100,9 +108,10 @@ export async function POST(req: NextRequest) {
 
     // Enhanced MCP context gathering for project-related queries
     let mcpContext = ""
+    let mcpData: any = null
     if (intent.intent === "project_search" && user?.githubUsername) {
       try {
-        const mcpData = await withRemoteMCPClient(async client => {
+        mcpData = await withRemoteMCPClient(async client => {
           // Get user analysis with error handling
           let userAnalysis = null
           try {
@@ -204,21 +213,23 @@ export async function POST(req: NextRequest) {
           mcpData.searchResults?.repositories &&
           mcpData.searchResults.repositories.length > 0
         ) {
-          mcpData.searchResults.repositories.slice(0, 5).forEach((repo, i) => {
-            contextParts.push(`${i + 1}. ${repo.name || "Unknown"}`)
-            contextParts.push(`   ${repo.description || "No description"}`)
-            contextParts.push(
-              `   Languages: ${repo.language || "Mixed"} | Stars: ${
-                repo.stars || 0
-              } | Topics: ${repo.topics?.slice(0, 3).join(", ") || "None"}`
-            )
-            contextParts.push(`   URL: ${repo.url || ""}`)
+          mcpData.searchResults.repositories
+            .slice(0, 5)
+            .forEach((repo: any, i: number) => {
+              contextParts.push(`${i + 1}. ${repo.name || "Unknown"}`)
+              contextParts.push(`   ${repo.description || "No description"}`)
+              contextParts.push(
+                `   Languages: ${repo.language || "Mixed"} | Stars: ${
+                  repo.stars || 0
+                } | Topics: ${repo.topics?.slice(0, 3).join(", ") || "None"}`
+              )
+              contextParts.push(`   URL: ${repo.url || ""}`)
 
-            if (repo.contributionMetrics?.hasGoodFirstIssues) {
-              contextParts.push(`   Good First Issues: Yes`)
-            }
-            contextParts.push("")
-          })
+              if (repo.contributionMetrics?.hasGoodFirstIssues) {
+                contextParts.push(`   Good First Issues: Yes`)
+              }
+              contextParts.push("")
+            })
         } else {
           contextParts.push("No repositories found matching the criteria")
         }
@@ -233,7 +244,7 @@ export async function POST(req: NextRequest) {
           )
           mcpData.trendingRepos.trending_repositories
             .slice(0, 3)
-            .forEach((repo, i) => {
+            .forEach((repo: any, i: number) => {
               contextParts.push(
                 `${i + 1}. ${repo.name || "Unknown"} (${
                   repo.stars || 0
@@ -255,70 +266,106 @@ export async function POST(req: NextRequest) {
 
     // Enhanced Qloo cultural intelligence context gathering
     let qlooContext = ""
-    if (intent.intent === "project_search" && user?.githubUsername && process.env.QLOO_API_KEY) {
+    if (
+      intent.intent === "project_search" &&
+      user?.githubUsername &&
+      process.env.QLOO_API_KEY
+    ) {
       try {
         console.log("Gathering Qloo cultural insights...")
-        
+
         // Extract technical interests from user query and profile
         const queryTechTerms = extractTechFromQuery(lastMessage)
-        const userLanguages = mcpData?.userAnalysis?.technical_profile?.primary_languages 
-          ? Object.keys(mcpData.userAnalysis.technical_profile.primary_languages)
+        const userLanguages = mcpData?.userAnalysis?.technical_profile
+          ?.primary_languages
+          ? Object.keys(
+              mcpData.userAnalysis.technical_profile.primary_languages
+            )
           : []
-        
+
         // Map to cultural tags
-        const culturalTags = mapTechToCulture([...queryTechTerms, ...userLanguages])
-        
+        const culturalTags = mapTechToCulture([
+          ...queryTechTerms,
+          ...userLanguages,
+        ])
+
         // Get cultural insights
         const [demographics, tasteAnalysis] = await Promise.allSettled([
           qlooClient.getDemographics(culturalTags),
-          qlooClient.getTasteAnalysis(culturalTags)
+          qlooClient.getTasteAnalysis(culturalTags),
         ])
-        
+
         // Build cultural context
         let contextParts = ["CULTURAL INTELLIGENCE ANALYSIS:"]
-        
+
         // Add mapped cultural interests
         if (culturalTags.length > 0) {
-          contextParts.push(`Identified Cultural Interests: ${culturalTags.slice(0, 8).join(", ")}`)
+          contextParts.push(
+            `Identified Cultural Interests: ${culturalTags
+              .slice(0, 8)
+              .join(", ")}`
+          )
         }
-        
+
         // Add demographic insights
-        if (demographics.status === 'fulfilled' && demographics.value.demographics?.length > 0) {
+        if (
+          demographics.status === "fulfilled" &&
+          demographics.value.demographics &&
+          demographics.value.demographics.length > 0
+        ) {
           const topDemo = demographics.value.demographics[0]
           contextParts.push(
-            `Primary Demographic Match: ${topDemo.age_group} ${topDemo.gender} (${(topDemo.affinity_score * 100).toFixed(1)}% affinity)`
+            `Primary Demographic Match: ${topDemo.age_group} ${
+              topDemo.gender
+            } (${(topDemo.affinity_score * 100).toFixed(1)}% affinity)`
           )
-          
+
           // Add top 3 demographics
           const topDemos = demographics.value.demographics.slice(0, 3)
           contextParts.push(
-            `Demographic Profile: ${topDemos.map(d => 
-              `${d.age_group} ${d.gender} (${(d.affinity_score * 100).toFixed(0)}%)`
-            ).join(", ")}`
+            `Demographic Profile: ${topDemos
+              .map(
+                d =>
+                  `${d.age_group} ${d.gender} (${(
+                    d.affinity_score * 100
+                  ).toFixed(0)}%)`
+              )
+              .join(", ")}`
           )
         }
-        
+
         // Add taste connections
-        if (tasteAnalysis.status === 'fulfilled' && tasteAnalysis.value.tags?.length > 0) {
-          const relatedInterests = tasteAnalysis.value.tags.slice(0, 6).map(t => t.name)
-          contextParts.push(`Related Cultural Interests: ${relatedInterests.join(", ")}`)
+        if (
+          tasteAnalysis.status === "fulfilled" &&
+          tasteAnalysis.value.tags &&
+          tasteAnalysis.value.tags.length > 0
+        ) {
+          const relatedInterests = tasteAnalysis.value.tags
+            .slice(0, 6)
+            .map(t => t.name)
+          contextParts.push(
+            `Related Cultural Interests: ${relatedInterests.join(", ")}`
+          )
         }
-        
+
         // Add location insights if available
         if (user.location) {
-          contextParts.push(`Location Context: Based in ${user.location} - consider timezone and regional tech communities`)
+          contextParts.push(
+            `Location Context: Based in ${user.location} - consider timezone and regional tech communities`
+          )
         }
-        
+
         contextParts.push(
           "\nThis cultural analysis helps identify projects where the developer will fit in socially and culturally, not just technically."
         )
-        
+
         qlooContext = contextParts.join("\n")
-        
+
         console.log("Qloo cultural insights gathered successfully")
       } catch (qlooError) {
         console.error("Qloo context gathering failed:", qlooError)
-        qlooContext = "Note: Cultural intelligence temporarily unavailable, focusing on technical matching."
+        qlooContext =
+          "Note: Cultural intelligence temporarily unavailable, focusing on technical matching."
       }
     }
 
@@ -357,7 +404,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Build enhanced system prompt with MCP and Qloo context
-    const systemPrompt = createEnhancedSystemPrompt(user, mcpContext, qlooContext)
+    const systemPrompt = createEnhancedSystemPrompt(
+      user,
+      mcpContext,
+      qlooContext
+    )
 
     // Create the AI stream with enhanced context
     const result = await streamText({
@@ -380,115 +431,45 @@ export async function POST(req: NextRequest) {
 // Helper function to extract technical terms from query
 function extractTechFromQuery(query: string): string[] {
   const techKeywords = [
-    "javascript", "typescript", "python", "java", "go", "rust", "react", "vue",
-    "angular", "node", "django", "flask", "spring", "kubernetes", "docker",
-    "aws", "azure", "gcp", "ml", "ai", "blockchain", "web3", "mobile", "ios",
-    "android", "frontend", "backend", "fullstack", "devops", "database", "api",
-    "nextjs", "express", "tensorflow", "pytorch", "mongodb", "postgresql"
+    "javascript",
+    "typescript",
+    "python",
+    "java",
+    "go",
+    "rust",
+    "react",
+    "vue",
+    "angular",
+    "node",
+    "django",
+    "flask",
+    "spring",
+    "kubernetes",
+    "docker",
+    "aws",
+    "azure",
+    "gcp",
+    "ml",
+    "ai",
+    "blockchain",
+    "web3",
+    "mobile",
+    "ios",
+    "android",
+    "frontend",
+    "backend",
+    "fullstack",
+    "devops",
+    "database",
+    "api",
+    "nextjs",
+    "express",
+    "tensorflow",
+    "pytorch",
+    "mongodb",
+    "postgresql",
   ]
-  
+
   const queryLower = query.toLowerCase()
   return techKeywords.filter(keyword => queryLower.includes(keyword))
 }
-
-// export async function POST(req: NextRequest) {
-//   try {
-//     // Check authentication
-//     const session = await auth()
-//     if (!session?.user?.id) {
-//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-//     }
-
-//     const { messages, structured = false } = await req.json()
-//     const lastMessage = messages[messages.length - 1]?.content || ""
-
-//     // Get user's GitHub profile data for context
-//     const user = await prisma.user.findUnique({
-//       where: { id: session.user.id },
-//       select: {
-//         githubUsername: true,
-//         bio: true,
-//         location: true,
-//         company: true,
-//         publicRepos: true,
-//         followers: true,
-//         following: true,
-//         githubCreatedAt: true,
-//       },
-//     })
-
-//     // Analyze user intent to determine response type
-//     const intent = await llmService.analyzeUserIntent(lastMessage)
-
-//     // If user is asking for project recommendations, use structured generation
-//     if (intent.intent === "project_search" && structured) {
-//       try {
-//         const recommendations = await llmService.generateProjectRecommendations(
-//           lastMessage,
-//           user
-//         )
-
-//         return NextResponse.json({
-//           type: "structured",
-//           data: recommendations,
-//         })
-//       } catch (error) {
-//         console.error(
-//           "Structured generation failed, falling back to streaming:",
-//           error
-//         )
-//         // Fall back to normal streaming
-//       }
-//     }
-
-//     // Build system prompt with user context
-//     const systemPrompt = `You are ContributorConnect AI, an intelligent assistant that helps developers discover open-source projects perfect for their skills and interests.
-
-// User Profile Context:
-// ${user?.githubUsername ? `- GitHub: @${user.githubUsername}` : ""}
-// ${user?.bio ? `- Bio: ${user.bio}` : ""}
-// ${user?.company ? `- Company: ${user.company}` : ""}
-// ${user?.location ? `- Location: ${user.location}` : ""}
-// ${user?.publicRepos ? `- Public Repositories: ${user.publicRepos}` : ""}
-// ${user?.followers ? `- Followers: ${user.followers}` : ""}
-// ${user?.githubCreatedAt ? `- GitHub Member Since: ${user.githubCreatedAt}` : ""}
-
-// Detected Intent: ${intent.intent}
-// Technologies of Interest: ${intent.technologies.join(", ") || "None specified"}
-// Preferred Difficulty: ${intent.difficultyLevel}
-
-// Your main responsibilities:
-// 1. **Project Discovery**: Help users find open-source projects that match their skills, interests, and contribution preferences
-// 2. **Skill Assessment**: Analyze user requests to understand their technical background and learning goals
-// 3. **Community Matching**: Recommend projects with welcoming communities that actively support new contributors
-// 4. **Contribution Guidance**: Provide specific advice on how to get started with contributions
-
-// When recommending projects, always provide:
-// - Specific project names in owner/repo format (e.g., facebook/react)
-// - Clear descriptions of what each project does
-// - Programming languages and technologies used
-// - Why each project is a good match for the user
-// - Suggested ways to start contributing
-// - Difficulty level for new contributors
-
-// Be encouraging, helpful, and focus on building confidence in open-source contribution. Use a conversational tone while being informative.`
-
-//     // Create the AI stream
-//     const result = await streamText({
-//       model: getModel(),
-//       messages: [{ role: "system", content: systemPrompt }, ...messages],
-//       temperature: 0.7,
-//       maxTokens: 1000,
-//     })
-
-//     // Return the streaming response
-//     // return result.toAIStreamResponse()
-//     return result.toDataStreamResponse()
-//   } catch (error) {
-//     console.error("Chat API error:", error)
-//     return NextResponse.json(
-//       { error: "Internal server error" },
-//       { status: 500 }
-//     )
-//   }
-// }

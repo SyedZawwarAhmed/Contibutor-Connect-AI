@@ -81,7 +81,7 @@ export function QlooDemographicsChart({
         ),
       }
     })
-    .filter(Boolean)
+    .filter((item): item is NonNullable<typeof item> => item !== null)
     .slice(0, 6)
 
   // Prepare gender distribution data for pie chart
