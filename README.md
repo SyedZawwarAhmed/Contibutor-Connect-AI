@@ -35,10 +35,13 @@ We integrated **Qloo's Taste AI** to analyze developers' broader cultural intere
 
 #### **3. Enhanced User Experience**
 
-- **Purple-themed Cultural Cards**: Beautiful UI components displaying cultural insights
-- **Recharts Integration**: Interactive bar charts, pie charts, and radar visualizations
+- **Interactive Process Flow**: Visual step-by-step breakdown of cultural intelligence pipeline
+- **Expandable Details**: Click to explore URN extraction, cultural analysis, and scoring process
+- **Qloo-themed UI**: Beautiful themed components with consistent design language
+- **Recharts Integration**: Interactive bar charts, pie charts, and demographic visualizations
+- **Smart Starter Prompts**: Culturally-aware example questions that showcase unique capabilities
 - **Real-time Data**: Live cultural analysis integrated into chat recommendations
-- **Theme Compatibility**: Seamless dark/light mode support
+- **Theme Compatibility**: Seamless dark/light mode support with Qloo color variables
 
 ---
 
@@ -212,9 +215,13 @@ npx prisma generate
 ### **Quick Experience (No Setup Required)**
 
 1. **Visit**: `/test-qloo-chat` - Complete chat experience with Qloo integration
-2. **Ask**: "Find me Python machine learning projects"
-3. **Watch**: Real-time cultural analysis with interactive charts
-4. **Explore**: Rich demographic insights and cultural scoring
+2. **Try Enhanced Starter Prompts**:
+   - "Find Python data science projects that match my technical interests and cultural preferences"
+   - "Show me beginner-friendly React projects with strong community support and cultural alignment"
+   - "Recommend AI/ML projects where developers like me typically contribute and feel welcome"
+3. **Watch**: Real-time cultural analysis with interactive process flow
+4. **Explore**: Click expand buttons to see URN extraction and cultural mapping details
+5. **Experience**: Rich demographic insights and interactive charts
 
 ### **API Testing**
 
@@ -224,10 +231,12 @@ npx prisma generate
 
 ### **What You'll See**
 
-- **Cultural Categories**: Science, Technology, Art, Business with affinity scores
-- **Demographics**: Age group preferences and gender distributions
-- **Project Scoring**: Real cultural alignment percentages
-- **Interactive Charts**: Bar charts, pie charts, and detailed breakdowns
+- **Interactive Process Flow**: Step-by-step visualization of cultural intelligence pipeline
+- **Expandable URN Details**: Click to see technical interests converted to cultural entities
+- **Cultural Analysis Breakdown**: Explore identified cultural preferences and community insights
+- **Demographic Visualizations**: Interactive charts showing age groups and gender distributions
+- **Real-time Processing**: Watch each step complete with status indicators and progress tracking
+- **Qloo-themed Interface**: Beautiful, consistent design language throughout the cultural analysis
 
 ---
 
