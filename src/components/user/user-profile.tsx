@@ -199,65 +199,6 @@ export function UserProfile({ user }: UserProfileProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Professional Info */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Professional Info</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {/* Skills from bio */}
-          <div>
-            <h4 className="text-xs font-medium text-muted-foreground mb-2">
-              Expertise Areas
-            </h4>
-            <div className="flex flex-wrap gap-1">
-              <Badge variant="secondary" className="text-xs">
-                Blockchain
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Frontend
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Software Engineering
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Problem Solving
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Entrepreneurship
-              </Badge>
-            </div>
-          </div>
-
-          {/* Tech stack placeholder */}
-          <div>
-            <h4 className="text-xs font-medium text-muted-foreground mb-2">
-              Tech Stack
-            </h4>
-            <div className="flex flex-wrap gap-1">
-              <Badge variant="outline" className="text-xs">
-                JavaScript
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                TypeScript
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                React
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                Next.js
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                Blockchain
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Based on repository analysis
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
