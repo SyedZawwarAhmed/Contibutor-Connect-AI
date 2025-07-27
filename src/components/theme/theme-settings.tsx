@@ -20,7 +20,9 @@ export function ThemeSettings() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold mb-2">Theme Settings</h2>
-        <p className="text-muted-foreground">Customize your ContributorConnect AI experience</p>
+        <p className="text-muted-foreground">
+          Customize your ContributorConnect AI experience
+        </p>
       </div>
 
       <Tabs defaultValue="palette" className="space-y-4">
@@ -40,7 +42,7 @@ export function ThemeSettings() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {themePalettes.map((themePalette) => (
+                {themePalettes.map(themePalette => (
                   <Card
                     key={themePalette.id}
                     className={`cursor-pointer transition-all hover:shadow-md ${
@@ -51,22 +53,26 @@ export function ThemeSettings() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-medium">{themePalette.name}</h3>
-                        {themePalette.id === "indigo" && (
+                        {themePalette.id === "sunset" && (
                           <Badge variant="secondary" className="text-xs">
                             Default
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground mb-3">{themePalette.description}</p>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {themePalette.description}
+                      </p>
                       <div className="flex gap-2">
-                        {Object.entries(themePalette.preview).map(([key, color]) => (
-                          <div
-                            key={key}
-                            className="w-8 h-8 rounded-md border border-border/50"
-                            style={{ backgroundColor: color }}
-                            title={key}
-                          />
-                        ))}
+                        {Object.entries(themePalette.preview).map(
+                          ([key, color]) => (
+                            <div
+                              key={key}
+                              className="w-8 h-8 rounded-md border border-border/50"
+                              style={{ backgroundColor: color }}
+                              title={key}
+                            />
+                          )
+                        )}
                       </div>
                     </CardContent>
                   </Card>
