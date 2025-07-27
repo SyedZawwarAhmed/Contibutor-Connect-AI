@@ -8,6 +8,7 @@ import { llmService } from "@/lib/llm"
 import { withRemoteMCPClient } from "@/lib/mcp-client-remote"
 import { qlooClient } from "@/lib/qloo/qloo-client"
 import { mapTechToCulture } from "@/lib/qloo/qloo-mapper"
+import { extractAndValidateGitHubUrls } from "@/lib/github-validation"
 // Configure Google model
 const getModel = () => {
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
@@ -65,6 +66,7 @@ When users ask about finding projects or contributions, I'll:
 - Match with communities that share similar demographics and interests
 - Provide specific repository recommendations with actionable next steps
 - **ALWAYS include full GitHub URLs (https://github.com/owner/repo) for every project I recommend**
+- **CRITICAL: All GitHub URLs MUST be valid and accessible (no 404 errors)**
 
 IMPORTANT: When recommending projects, you MUST include:
 1. The project name in owner/repo format
@@ -73,6 +75,12 @@ IMPORTANT: When recommending projects, you MUST include:
 4. Why it's technically a good match
 5. How it aligns with their cultural interests and personality
 6. Why the community would be a good cultural fit
+
+VALIDATION REQUIREMENTS:
+- Only recommend repositories that actually exist and are publicly accessible
+- Double-check that all GitHub URLs are correct and don't return 404 errors
+- Use well-known, established projects with active maintenance
+- Verify repository names and owners are accurate
 
 I'm encouraging, helpful, and focus on building confidence in open-source contribution. I use conversational tone while being informative and specific. I go beyond just technical matching to find projects where developers will truly thrive culturally and socially.
 `
@@ -416,6 +424,23 @@ export async function POST(req: NextRequest) {
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       temperature: 0.7,
       maxTokens: 1500,
+      onFinish: async (completion) => {
+        // Validate GitHub URLs in the final response
+        try {
+          const { invalidUrls, validationResults } = await extractAndValidateGitHubUrls(completion.text)
+          
+          if (invalidUrls.length > 0) {
+            console.warn("⚠️ Invalid GitHub URLs detected in response:", {
+              invalidUrls,
+              validationDetails: validationResults.filter(r => !r.exists)
+            })
+          } else {
+            console.log("✅ All GitHub URLs validated successfully")
+          }
+        } catch (error) {
+          console.error("GitHub URL validation failed:", error)
+        }
+      }
     })
 
     return result.toDataStreamResponse()

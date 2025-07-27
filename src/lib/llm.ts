@@ -2,6 +2,7 @@
 import { google } from "@ai-sdk/google"
 import { generateObject, generateText } from "ai"
 import { z } from "zod"
+import { validateGitHubUrls } from "./github-validation"
 
 // Types for structured responses
 export const ProjectRecommendationSchema = z.object({
@@ -66,7 +67,13 @@ For each project, provide:
 - Specific explanation of why it's a good match
 - Types of contributions they could make
 
-IMPORTANT: You MUST include the complete GitHub URL (https://github.com/owner/repo) for each project recommendation. Ensure all GitHub URLs are real, valid, and accessible.`
+CRITICAL VALIDATION REQUIREMENTS:
+- You MUST include the complete GitHub URL (https://github.com/owner/repo) for each project recommendation
+- Ensure ALL GitHub URLs are real, valid, and accessible (no 404 errors)
+- Only recommend repositories that actually exist and are publicly accessible  
+- Use well-known, established projects with active maintenance and communities
+- Double-check repository names and owners are accurate before including them
+- Prefer popular, maintained repositories over experimental or archived ones`
 
     try {
       const result = await generateObject({
@@ -76,7 +83,32 @@ IMPORTANT: You MUST include the complete GitHub URL (https://github.com/owner/re
         temperature: 0.7,
       })
 
-      return result.object
+      // Validate all GitHub URLs in the response
+      const githubUrls = result.object.projects.map(p => p.githubUrl)
+      const validationResults = await validateGitHubUrls(githubUrls)
+      
+      // Filter out projects with invalid URLs
+      const validProjects = result.object.projects.filter((project, index) => {
+        const validation = validationResults[index]
+        if (!validation.exists) {
+          console.warn(`❌ Filtered out invalid GitHub URL: ${project.githubUrl} - ${validation.error}`)
+          return false
+        }
+        return true
+      })
+
+      if (validProjects.length === 0) {
+        throw new Error("No valid GitHub URLs found in generated recommendations")
+      }
+
+      if (validProjects.length < result.object.projects.length) {
+        console.warn(`⚠️ Filtered out ${result.object.projects.length - validProjects.length} projects with invalid URLs`)
+      }
+
+      return {
+        ...result.object,
+        projects: validProjects
+      }
     } catch (error) {
       console.error("Error generating project recommendations:", error)
       throw new Error("Failed to generate recommendations")
