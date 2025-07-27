@@ -56,6 +56,18 @@ export function ChatInterface({
               onProjectRequest={onProjectRequest}
             />
           ))}
+          {/* Show loading message when waiting for AI response */}
+          {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
+            <ChatMessage
+              message={{
+                id: 'loading-message',
+                role: 'assistant',
+                content: '',
+              }}
+              isLoading={true}
+              onProjectRequest={onProjectRequest}
+            />
+          )}
         </div>
       </ScrollArea>
 

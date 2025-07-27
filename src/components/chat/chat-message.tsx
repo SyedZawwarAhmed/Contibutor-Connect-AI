@@ -1,10 +1,16 @@
 // src/components/chat/chat-message.tsx (Enhanced with MCP Support)
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card } from "@/components/ui/card"
 import { ProjectCard } from "./project-card"
-import { Bot, User, Sparkles, Database, Zap } from "lucide-react"
+import { Bot, User, Sparkles, Database, Zap, Brain } from "lucide-react"
+import {
+  QlooDemographicsChart,
+  QlooCulturalOverview,
+  QlooProjectScoring,
+  QlooRepoConnectionFlow,
+} from "@/components/qloo"
 import { LoadingDots } from "@/components/ui/loading-dots"
 import type { Message } from "ai"
 import { useEffect, useState, useRef } from "react"
@@ -29,6 +35,9 @@ export interface ProjectData {
   contributionTypes: string[]
   contributionScore?: number
   recommendationReason?: string
+  culturalScore?: number
+  culturalTags?: string[]
+  matchedTags?: string[]
 }
 
 interface StructuredResponse {
@@ -39,6 +48,16 @@ interface StructuredResponse {
     primary_languages: string[]
     suggested_focus_areas: string[]
   }
+  culturally_enhanced_projects?: Array<{
+    name: string
+    description?: string
+    language?: string
+    topics?: string[]
+    stars?: number
+    culturalScore?: number
+    culturalTags?: string[]
+    matchedTags?: string[]
+  }>
 }
 
 interface MCPMetadata {
@@ -47,6 +66,33 @@ interface MCPMetadata {
   trending_repos_found?: number
   mcp_error?: string
   user_analysis_used?: boolean
+}
+
+interface QlooMetadata {
+  qloo_insights_used?: boolean
+  cultural_tags_identified?: number
+  demographics_analyzed?: boolean
+  cultural_scoring_applied?: boolean
+  total_projects_analyzed?: number
+}
+
+interface QlooInsights {
+  culturalTags?: string[]
+  demographics?: Array<{
+    entity_id: string
+    query: {
+      age: Record<string, number>
+      gender: {
+        male: number
+        female: number
+      }
+    }
+  }>
+  relatedInterests?: Array<{
+    name: string
+    popularity?: number
+  }>
+  qlooUrns?: string[]
 }
 
 const MarkdownComponents = {
@@ -133,16 +179,39 @@ const MarkdownComponents = {
   },
 
   // Links
-  a: ({ href, children }: any) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
-    >
-      {children}
-    </a>
-  ),
+  a: ({ href, children }: any) => {
+    // Check if it's a GitHub link
+    const isGitHubLink = href?.includes("github.com")
+
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${
+          isGitHubLink
+            ? "text-primary hover:text-primary/80 underline underline-offset-2 font-medium inline-flex items-center gap-1"
+            : "text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
+        }`}
+      >
+        {children}
+        {isGitHubLink && (
+          <svg
+            className="w-3 h-3 inline-block"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.865 8.17 6.84 9.49.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.71-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.93 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.03A9.58 9.58 0 0110 4.84c.85 0 1.7.11 2.5.33 1.91-1.3 2.75-1.03 2.75-1.03.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48A10 10 0 0020 10c0-5.523-4.477-10-10-10z"
+              clipRule="evenodd"
+            />
+          </svg>
+        )}
+      </a>
+    )
+  },
 
   // Blockquotes
   blockquote: ({ children }: any) => (
@@ -194,6 +263,8 @@ export function ChatMessage({
   const [structuredData, setStructuredData] =
     useState<StructuredResponse | null>(null)
   const [mcpMetadata, setMcpMetadata] = useState<MCPMetadata | null>(null)
+  const [qlooMetadata, setQlooMetadata] = useState<QlooMetadata | null>(null)
+  const [qlooInsights, setQlooInsights] = useState<QlooInsights | null>(null)
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const processedMessageIds = useRef(new Set<string>())
 
@@ -233,7 +304,27 @@ export function ChatMessage({
 
   const fetchEnhancedRecommendations = async (query: string) => {
     try {
-      // Try MCP-enhanced recommendations first
+      // Try Qloo-enhanced recommendations first (includes MCP + cultural intelligence)
+      const qlooResponse = await fetch("/api/recommendations/qloo-enhanced", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, use_qloo: true }),
+      })
+
+      if (qlooResponse.ok) {
+        const qlooData = await qlooResponse.json()
+        console.log("Qloo enhanced data", qlooData)
+
+        if (qlooData.success && qlooData.data.projects) {
+          setStructuredData(qlooData.data)
+          setQlooMetadata(qlooData.metadata)
+          setQlooInsights(qlooData.qloo_insights)
+          console.log("qlooData", qlooData)
+          return
+        }
+      }
+
+      // Fallback to MCP-enhanced recommendations
       const mcpResponse = await fetch("/api/recommendations/mcp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -268,19 +359,6 @@ export function ChatMessage({
       console.error("Failed to fetch enhanced recommendations:", error)
     } finally {
       setIsLoadingProjects(false)
-    }
-  }
-
-  const formatDifficulty = (difficulty: string) => {
-    switch (difficulty) {
-      case "beginner":
-        return { text: "Beginner Friendly", color: "text-green-600" }
-      case "intermediate":
-        return { text: "Intermediate", color: "text-yellow-600" }
-      case "advanced":
-        return { text: "Advanced", color: "text-red-600" }
-      default:
-        return { text: "Any Level", color: "text-gray-600" }
     }
   }
 
@@ -382,16 +460,51 @@ export function ChatMessage({
             <div className="flex items-center gap-2 p-2 bg-primary/5 rounded-lg border border-primary/20">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold text-primary">
-                {mcpMetadata?.user_analysis_used ? "Live GitHub" : "AI"}{" "}
+                {qlooMetadata?.qloo_insights_used
+                  ? "Culturally-Aware AI"
+                  : mcpMetadata?.user_analysis_used
+                  ? "Live GitHub"
+                  : "AI"}{" "}
                 Recommendations
               </span>
               <span className="text-xs text-muted-foreground ml-auto">
                 {structuredData.projects.length} projects found
               </span>
+              {qlooMetadata?.qloo_insights_used && (
+                <Brain className="h-3 w-3 text-primary" />
+              )}
               {mcpMetadata?.user_analysis_used && (
                 <Database className="h-3 w-3 text-primary" />
               )}
             </div>
+
+            {/* Qloo Cultural Intelligence Insights */}
+            {qlooInsights && (
+              <div className="space-y-4">
+                {/* Cultural Overview */}
+                {qlooMetadata && (
+                  <QlooCulturalOverview
+                    insights={qlooInsights}
+                    metadata={qlooMetadata}
+                  />
+                )}
+                {/* Demographics Chart */}
+                {qlooInsights.demographics &&
+                  qlooInsights.demographics.length > 0 && (
+                    <QlooDemographicsChart
+                      demographics={qlooInsights.demographics}
+                    />
+                  )}
+
+                {/* Project Scoring (if culturally enhanced projects are available) */}
+                {structuredData?.culturally_enhanced_projects &&
+                  structuredData.culturally_enhanced_projects.length > 0 && (
+                    <QlooProjectScoring
+                      projects={structuredData.culturally_enhanced_projects}
+                    />
+                  )}
+              </div>
+            )}
 
             {/* MCP metadata info */}
             {mcpMetadata && (
@@ -423,6 +536,73 @@ export function ChatMessage({
               </div>
             )}
 
+            {/* Qloo metadata info */}
+            {qlooMetadata && (
+              <div className="text-xs text-muted-foreground bg-purple-50 dark:bg-purple-900/20 p-2 rounded border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center gap-4 flex-wrap">
+                  {qlooMetadata.qloo_insights_used && (
+                    <span className="flex items-center gap-1">
+                      <Brain className="h-3 w-3 text-purple-500" />
+                      <span className="text-purple-600 dark:text-purple-400">
+                        Qloo Cultural Intelligence
+                      </span>
+                    </span>
+                  )}
+                  {qlooMetadata.cultural_tags_identified !== undefined && (
+                    <span>
+                      🎯 {qlooMetadata.cultural_tags_identified} cultural
+                      interests mapped
+                    </span>
+                  )}
+                  {qlooMetadata.demographics_analyzed && (
+                    <span>👥 Demographics analyzed</span>
+                  )}
+                  {qlooMetadata.cultural_scoring_applied && (
+                    <span>⭐ Cultural scoring applied</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Qloo → GitHub Repository Connection Flow */}
+            {qlooInsights && qlooMetadata?.qloo_insights_used && (
+              <QlooRepoConnectionFlow
+                userQuery={message.content}
+                extractedUrns={qlooInsights.qlooUrns}
+                culturalTags={qlooInsights.culturalTags}
+                repositoryRecommendations={
+                  // Use culturally enhanced projects if available, otherwise fall back to regular projects
+                  (structuredData?.culturally_enhanced_projects && structuredData.culturally_enhanced_projects.length > 0)
+                    ? structuredData.culturally_enhanced_projects.map(project => ({
+                        name: project.name,
+                        description: project.description,
+                        cultural_score: project.culturalScore,
+                        demographic_match: undefined, // Not available in culturally_enhanced_projects
+                        url: '#', // Not available in culturally_enhanced_projects
+                        stars: project.stars,
+                        language: project.language,
+                      }))
+                    : structuredData?.projects?.map(project => ({
+                        name: project.name,
+                        description: project.description,
+                        cultural_score: project.culturalScore,
+                        demographic_match: undefined,
+                        url: project.githubUrl,
+                        stars: project.stars,
+                        language: project.languages?.[0],
+                      })) || []
+                }
+                metadata={{
+                  total_repos_analyzed:
+                    mcpMetadata?.mcp_search_total ||
+                    structuredData?.projects?.length,
+                  cultural_scoring_applied:
+                    qlooMetadata?.cultural_scoring_applied,
+                  demographic_factors_used: qlooMetadata?.demographics_analyzed,
+                }}
+              />
+            )}
+
             {structuredData.projects.map((project, index) => (
               <ProjectCard
                 key={`${project.name}-${index}`}
@@ -439,6 +619,9 @@ export function ChatMessage({
                   contributionTypes: project.contributionTypes,
                   contributionScore: project.contributionScore,
                   recommendationReason: project.recommendationReason,
+                  culturalScore: project.culturalScore,
+                  culturalTags: project.culturalTags,
+                  matchedTags: project.matchedTags,
                 }}
                 enhanced={true}
                 showMCPBadge={mcpMetadata?.user_analysis_used}

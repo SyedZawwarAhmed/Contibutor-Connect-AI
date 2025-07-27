@@ -1,5 +1,5 @@
 // src/lib/llm.ts
-import { anthropic } from "@ai-sdk/anthropic"
+import { google } from "@ai-sdk/google"
 import { generateObject, generateText } from "ai"
 import { z } from "zod"
 
@@ -26,10 +26,10 @@ export type ProjectRecommendation = z.infer<typeof ProjectRecommendationSchema>
 // LLM Service class
 export class LLMService {
   private getModel() {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY is not configured")
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not configured")
     }
-    return anthropic("claude-4-sonnet-20250514")
+    return google("gemini-2.0-flash")
   }
 
   async generateProjectRecommendations(
@@ -58,6 +58,7 @@ Consider the user's experience level, interests, and preferred technologies. Foc
 
 For each project, provide:
 - Accurate GitHub repository name (owner/repo format)
+- Full GitHub URL (https://github.com/owner/repo) - THIS IS REQUIRED
 - Clear description of what the project does
 - Programming languages used
 - Relevant topics/tags
@@ -65,7 +66,7 @@ For each project, provide:
 - Specific explanation of why it's a good match
 - Types of contributions they could make
 
-Ensure all GitHub URLs are real and accessible.`
+IMPORTANT: You MUST include the complete GitHub URL (https://github.com/owner/repo) for each project recommendation. Ensure all GitHub URLs are real, valid, and accessible.`
 
     try {
       const result = await generateObject({
