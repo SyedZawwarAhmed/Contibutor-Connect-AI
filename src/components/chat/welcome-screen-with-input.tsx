@@ -15,10 +15,10 @@ interface WelcomeScreenWithInputProps {
 }
 
 const starterQuestions = [
-  "Find a beginner-friendly React project",
-  "Show me Python projects for data visualization",
-  "What are some trending AI/ML projects?",
-  "Find TypeScript projects that need documentation help",
+  "Find Python data science projects that match my technical interests and cultural preferences",
+  "Show me beginner-friendly React projects with strong community support and cultural alignment",
+  "Recommend AI/ML projects where developers like me typically contribute and feel welcome",
+  "Find TypeScript projects that align with my coding style and the type of developer communities I enjoy",
 ]
 
 export function WelcomeScreenWithInput({

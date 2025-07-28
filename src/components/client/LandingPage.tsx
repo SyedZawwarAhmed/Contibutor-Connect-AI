@@ -16,6 +16,7 @@ import {
 import { ThemeToggle } from "@/components/theme/theme-toggle"
 import { ThemeSelector } from "@/components/theme/theme-selector"
 import SignIn from "../signin-github"
+import Link from "next/link"
 
 export default function LandingPage() {
   return (
@@ -73,13 +74,15 @@ export default function LandingPage() {
               iconAfter={<ArrowRight className="h-5 w-5" />}
             />
 
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-8 py-6 bg-transparent"
-            >
-              View Demo
-            </Button>
+            <Link href={`https://vimeo.com/1104968153?share=copy`}>
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 py-6 bg-transparent"
+              >
+                View Demo
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

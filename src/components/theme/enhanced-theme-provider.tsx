@@ -26,7 +26,10 @@ interface ThemeProviderProps {
   defaultPalette?: string
 }
 
-export function EnhancedThemeProvider({ children, defaultPalette = "indigo" }: ThemeProviderProps) {
+export function EnhancedThemeProvider({
+  children,
+  defaultPalette = "sunset",
+}: ThemeProviderProps) {
   const [palette, setPaletteState] = useState(defaultPalette)
   const [mounted, setMounted] = useState(false)
 
@@ -67,9 +70,12 @@ export function EnhancedThemeProvider({ children, defaultPalette = "indigo" }: T
   // Listen for theme changes to reapply colors
   useEffect(() => {
     if (mounted) {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.type === "attributes" && mutation.attributeName === "class") {
+      const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+          if (
+            mutation.type === "attributes" &&
+            mutation.attributeName === "class"
+          ) {
             applyThemeColors(palette)
           }
         })
@@ -92,7 +98,12 @@ export function EnhancedThemeProvider({ children, defaultPalette = "indigo" }: T
 
   return (
     <ThemeContext.Provider value={{ palette, setPalette, currentPalette }}>
-      <NextThemesProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <NextThemesProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
         {children}
       </NextThemesProvider>
     </ThemeContext.Provider>

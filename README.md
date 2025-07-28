@@ -34,22 +34,26 @@ A revolutionary open-source project discovery platform that combines AI-powered 
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/contributor-connect-ai.git
 cd contributor-connect-ai
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Set up environment variables:
+
 ```bash
 cp .env.example .env.local
 ```
 
 Edit `.env.local` with your credentials:
+
 ```env
 DATABASE_URL="postgresql://..."
 NEXTAUTH_URL="http://localhost:3000"
@@ -61,11 +65,13 @@ QLOO_API_KEY="your-qloo-api-key"
 ```
 
 4. Set up the database:
+
 ```bash
 npx prisma migrate dev
 ```
 
 5. Run the development server:
+
 ```bash
 pnpm dev
 ```

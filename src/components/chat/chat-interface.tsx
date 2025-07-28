@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 import { useEffect, useRef } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChatMessage } from "./chat-message"
@@ -14,9 +15,19 @@ interface ChatInterfaceProps {
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
   isLoading: boolean
+  error?: Error | null
+  onProjectRequest: (query: string) => void
 }
 
-export function ChatInterface({ messages, input, handleInputChange, handleSubmit, isLoading }: ChatInterfaceProps) {
+export function ChatInterface({
+  messages,
+  input,
+  handleInputChange,
+  handleSubmit,
+  isLoading,
+  error,
+  onProjectRequest,
+}: ChatInterfaceProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -27,21 +38,34 @@ export function ChatInterface({ messages, input, handleInputChange, handleSubmit
 
   return (
     <div className="flex flex-col h-full">
+      {error && (
+        <Alert variant="destructive" className="m-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to get response from AI. Please try again.
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-4 max-w-4xl mx-auto">
-          {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
+          {messages.map(message => (
+            <ChatMessage
+              key={message.id}
+              message={message}
+              onProjectRequest={onProjectRequest}
+            />
           ))}
-          {isLoading && (
+          {/* Show loading message when waiting for AI response */}
+          {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
             <ChatMessage
               message={{
-                id: "loading",
-                role: "assistant",
-                content: "",
-                parts: [],
+                id: 'loading-message',
+                role: 'assistant',
+                content: '',
               }}
               isLoading={true}
+              onProjectRequest={onProjectRequest}
             />
           )}
         </div>
