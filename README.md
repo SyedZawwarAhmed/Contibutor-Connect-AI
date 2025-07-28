@@ -1,4 +1,4 @@
-# ContributorConnect AI 🚀
+# ContributorConnect AI
 
 **Revolutionizing Open Source Discovery with Cultural Intelligence**
 
